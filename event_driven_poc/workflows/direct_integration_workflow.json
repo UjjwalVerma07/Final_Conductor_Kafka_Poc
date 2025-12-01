@@ -1,0 +1,117 @@
+{
+  "name": "direct_integration_workflow",
+  "description": "Event-driven pipeline with direct Conductor-microservice integration (no Event Router)",
+  "version": 2,
+  "tasks": [
+    {
+      "name": "start_pipeline",
+      "taskReferenceName": "start_pipeline",
+      "type": "KAFKA_PUBLISH",
+      "inputParameters": {
+        "kafka_request": {
+          "topic": "email-validation-requests",
+          "bootStrapServers": "kafka:9092",
+          "value": {
+            "workflowId": "${workflow.workflowId}",
+            "taskId": "email_validation_task",
+            "eventType": "email_validation_request",
+            "data": {
+              "input_bucket": "raw-data",                                               
+              "input_key": "customer_data_sample.csv",
+              "output_bucket": "email-validated",
+              "output_key": "email_validated_${workflow.instanceId}.csv",
+              "pipelineStage": "email_validation",
+              "records": 1000
+            }
+          },
+          "key": "email-validation-${workflow.instanceId}"
+        }
+      },
+      "sink": "conductor:email_validation_completed"
+    },
+    {
+      "name": "trigger_phone_validation",
+      "taskReferenceName": "trigger_phone_validation",
+      "type": "KAFKA_PUBLISH",
+      "inputParameters": {
+        "kafka_request": {
+          "topic": "phone-validation-requests",
+          "bootStrapServers": "kafka:9092",
+          "value": {
+            "workflowId": "${workflow.workflowId}",
+            "taskId": "phone_validation_task",
+            "eventType": "phone_validation_request",
+            "data": {
+              "input_bucket": "email-validated",
+              "input_key": "email_validated_${workflow.instanceId}.csv",
+              "output_bucket": "phone-validated",
+              "output_key": "phone_validated_${workflow.instanceId}.csv",
+              "pipelineStage": "phone_validation",
+              "previousStage": "email_validation"
+            }
+          },
+          "key": "phone-validation-${workflow.instanceId}"
+        }
+      },
+      "sink": "conductor:phone_validation_completed"
+    },
+    {
+      "name": "trigger_enrichment",
+      "taskReferenceName": "trigger_enrichment",
+      "type": "KAFKA_PUBLISH",
+      "inputParameters": {
+        "kafka_request": {
+          "topic": "enrichment-requests",
+          "bootStrapServers": "kafka:9092",
+          "value": {
+            "workflowId": "${workflow.workflowId}",
+            "taskId": "enrichment_task",
+            "eventType": "enrichment_request",
+            "data": {
+              "input_bucket": "phone-validated",
+              "input_key": "phone_validated_${workflow.instanceId}.csv",
+              "output_bucket": "enriched",
+              "output_key": "enriched_${workflow.instanceId}.csv",
+              "pipelineStage": "enrichment",
+              "previousStage": "phone_validation"
+            }
+          },
+          "key": "enrichment-${workflow.instanceId}"
+        }
+      },
+      "sink": "conductor:enrichment_completed"
+    },
+    {
+      "name": "finalize_pipeline",
+      "taskReferenceName": "finalize_pipeline",
+      "type": "KAFKA_PUBLISH",
+      "inputParameters": {
+        "kafka_request": {
+          "topic": "pipeline-completion",
+          "bootStrapServers": "kafka:9092",
+          "value": {
+            "workflowId": "${workflow.workflowId}",
+            "eventType": "pipeline_completed",
+            "data": {
+              "final_bucket": "enriched",
+              "final_key": "enriched_${workflow.instanceId}.csv",
+              "pipelineStage": "completed",
+              "records": 1000
+            }
+          },
+          "key": "pipeline-completion-${workflow.instanceId}"
+        }
+      }
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {
+    "pipeline_result": "${finalize_pipeline.output}",
+    "workflow_id": "${workflow.workflowId}",
+    "final_file": "enriched_${workflow.instanceId}.csv"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": true,
+  "ownerEmail": "team@company.com"
+}

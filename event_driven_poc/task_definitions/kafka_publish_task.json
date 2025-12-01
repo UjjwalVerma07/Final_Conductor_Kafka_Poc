@@ -1,0 +1,19 @@
+[{
+  "name": "KAFKA_PUBLISH",
+  "description": "Kafka publish task for event-driven architecture",
+  "retryCount": 3,
+  "timeoutSeconds": 300,
+  "inputKeys": ["kafka_request"],
+  "outputKeys": ["result"],
+  "timeoutPolicy": "TIME_OUT_WF",
+  "retryLogic": "FIXED",
+  "retryDelaySeconds": 60,
+  "responseTimeoutSeconds": 300,
+  "concurrentExecLimit": null,
+  "rateLimitPerFrequency": 0,
+  "rateLimitFrequencyInSeconds": 1,
+  "isolationGroupId": null,
+  "executionNameSpace": null,
+  "pollTimeoutSeconds": null,
+  "backoffScaleFactor": 1
+}]

@@ -1,0 +1,6 @@
+{
+  "detail": "DAG with dag_id: 'nua-nameparse-process-stage-v02-00-06-tiny' has import errors",
+  "status": 400,
+  "title": "DAG cannot be triggered",
+  "type": "https://airflow.apache.org/docs/apache-airflow/2.10.1/stable-rest-api-ref.html#section/Errors/BadRequest"
+}

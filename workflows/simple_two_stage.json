@@ -1,0 +1,61 @@
+{
+  "name": "simple_two_stage_flow",
+  "description": "Simple 2-stage Kafka-based flow: Stage1 -> Service1 -> Stage2 -> Service2 -> Complete",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "publish_to_kafka",
+      "taskReferenceName": "publish_stage1_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "topic": "stage1-requests",
+        "data": {
+          "stage": 1,
+          "input_data": "${workflow.input.input_data}"
+        }
+      }
+    },
+    {
+      "name": "wait_for_result",
+      "taskReferenceName": "wait_stage1_result_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "topic": "stage1-results",
+        "timeout": 60
+      }
+    },
+    {
+      "name": "publish_to_kafka",
+      "taskReferenceName": "publish_stage2_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "topic": "stage2-requests",
+        "data": {
+          "stage": 2,
+          "stage1_result": "${wait_stage1_result_ref.output.result}"
+        }
+      }
+    },
+    {
+      "name": "wait_for_result",
+      "taskReferenceName": "wait_stage2_result_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "topic": "stage2-results",
+        "timeout": 60
+      }
+    }
+  ],
+  "outputParameters": {
+    "stage1_result": "${wait_stage1_result_ref.output.result}",
+    "stage2_result": "${wait_stage2_result_ref.output.result}",
+    "final_status": "completed"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "ownerEmail": "test@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 300
+}
+

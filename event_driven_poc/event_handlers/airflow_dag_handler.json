@@ -1,0 +1,24 @@
+{
+  "name": "complete_airflow_dag_task",
+  "event": "kafka:conductor-events",
+  "condition": "$.eventType == 'airflow_dag_completed'",
+  "actions": [
+    {
+      "action": "complete_task",
+      "complete_task": {
+        "workflowId": "${workflowId}",
+        "taskRefName": "wait_for_airflow_completion",
+        "output": {
+          "dag_id": "${data.dag_id}",
+          "jobid": "${data.jobid}",
+          "status": "${data.status}",
+          "result": "${data.result}",
+          "pipelineStage": "${data.pipelineStage}",
+          "timestamp": "${data.timestamp}"
+        }
+      }
+    }
+  ],
+  "active": true
+}
+
