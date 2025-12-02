@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-Airflow Adapter Service
-Simple service that triggers Airflow DAGs via script and notifies Conductor on completion
-"""
-
 import os
 import json
 import time
@@ -43,7 +38,7 @@ DAG_MAX_WAIT_TIME = int(os.getenv('DAG_MAX_WAIT_TIME', '3600'))  # max time to w
 # Script path
 SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'trigger_airflow.sh')
 
-# Initialize Kafka producer
+
 kafka_producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP,
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
@@ -62,127 +57,7 @@ class AirflowAdapterService:
         
         logger.info(f"Airflow Adapter Service initialized")
         logger.info(f"   Script: {self.script_path}")
-    
-    # def trigger_dag_run(self, jobid, session_id, metadata_url, execution_id, dag_id=None, stats_url=None):
-    #     """Trigger Airflow DAG run and return dag_run_id"""
-    #     try:
-    #         dag_id = dag_id or 'nua-nameparse-process-stage-v02-00-06-tiny'
-            
-    #         logger.info(f"Triggering Airflow DAG")
-    #         logger.info(f"   DAG ID: {dag_id}")
-    #         logger.info(f"   Job ID: {jobid}")
-    #         logger.info(f"   Session ID: {session_id}")
-    #         logger.info(f"   Final Job ID: {jobid}-{session_id}")
-    #         logger.info(f"   Metadata URL: {metadata_url}")
-    #         logger.info(f"   Execution ID: {execution_id}")
-            
-    #         # Execute the bash script with environment variables
-    #         # Note: metadata_url and stats_url use defaults from trigger_airflow.sh
-    #         # We don't set them here - script will use its default values
-    #         env = os.environ.copy()
-    #         env.update({
-    #             'JOBID': jobid,
-    #             'SESSION_ID': session_id,  # Pass unique session ID from workflow
-    #             'EXECUTION_ID': execution_id,
-    #             'DAG_ID': dag_id
-    #         })
-            
-    #         # Pass MWAA config
-    #         if MWAA_ENDPOINT:
-    #             env['MWAA_ENDPOINT'] = MWAA_ENDPOINT
-    #         if MWAA_SESSION_TOKEN:
-    #             env['MWAA_SESSION_TOKEN'] = MWAA_SESSION_TOKEN
-            
-    #         # Step 1: Execute the script (script will trigger the DAG run)
-    #         logger.info(f"Executing trigger script: {self.script_path}")
-    #         result = subprocess.run(
-    #             ['/bin/bash', self.script_path],
-    #             capture_output=True,
-    #             text=True,
-    #             timeout=60,
-    #             env=env
-    #         )
-            
-    #         # Log script output (stderr contains the echo statements)
-    #         if result.stderr:
-    #             logger.info(f"Script output: {result.stderr.strip()}")
 
-    #         if result.returncode == 0:
-    #             # Step 2: Parse the script response to get dag_run_id
-    #             # The script outputs JSON response from Airflow API to stdout
-    #             try:
-    #                 # Clean stdout (remove any whitespace)
-    #                 stdout_clean = result.stdout.strip()
-    #                 logger.debug(f"Script JSON response: {stdout_clean}")
-                    
-    #                 response_data = json.loads(stdout_clean)
-    #                 # Log the full response for debugging
-    #                 logger.info(f"Full API response: {json.dumps(response_data, indent=2)}")
-                    
-    #                 # Check if API returned an error (error responses have 'status' field with non-200 values)
-    #                 api_status = response_data.get('status')
-    #                 if api_status is not None and api_status != 200:
-    #                     error_detail = response_data.get('detail', 'Unknown error')
-    #                     error_title = response_data.get('title', 'Error')
-                        
-    #                     # Handle 409 Conflict - DAG run already exists (this is OK, we can monitor it)
-    #                     if api_status == 409:
-    #                         # Extract dag_run_id from error message or use constructed one
-    #                         # Error format: "DAGRun with DAG ID: 'xxx' and DAGRun ID: 'yyy' already exists"
-    #                         match = re.search(r"DAGRun ID: '([^']+)'", error_detail)
-    #                         if match:
-    #                             existing_dag_run_id = match.group(1)
-    #                             logger.warning(f"DAG run already exists (409 Conflict): {existing_dag_run_id}")
-    #                             logger.warning(f"   Will monitor existing DAG run instead of creating new one")
-    #                             return True, existing_dag_run_id
-    #                         else:
-    #                             # Fallback: use constructed dag_run_id
-    #                             constructed_dag_run_id = f"{jobid}-{session_id}"
-    #                             logger.warning(f"DAG run already exists (409 Conflict), using constructed ID: {constructed_dag_run_id}")
-    #                             return True, constructed_dag_run_id
-                        
-    #                     # For other errors, return failure
-    #                     logger.error(f"Airflow API error (status {api_status}): {error_title}")
-    #                     logger.error(f"   Detail: {error_detail}")
-    #                     return False, None
-                    
-    #                 # Check if response has 'dag_run_id' (successful creation) or is an error response
-    #                 if 'dag_run_id' not in response_data:
-    #                     # This is likely an error response without status field, or unexpected format
-    #                     error_detail = response_data.get('detail', response_data.get('message', 'Unknown error'))
-    #                     logger.error(f"Airflow API error: No dag_run_id in response")
-    #                     logger.error(f"   Response: {error_detail}")
-    #                     return False, None
-                    
-    #                 # Extract dag_run_id from Airflow API response
-    #                 # Note: Script modifies JOBID by appending SESSION_ID, so dag_run_id will be different
-    #                 dag_run_id = response_data.get('dag_run_id')
-                    
-    #                 logger.info(f"Airflow DAG triggered successfully via script")
-    #                 logger.info(f"   DAG Run ID: {dag_run_id}")
-    #                 logger.info(f"   Original Job ID: {jobid}")
-    #                 return True, dag_run_id
-    #             except json.JSONDecodeError as e:
-    #                 # If response is not JSON, log error and fallback
-    #                 logger.error(f"Could not parse script response as JSON: {e}")
-    #                 logger.error(f"   Response was: {result.stdout}")
-    #                 logger.warning(f"Using original jobid as dag_run_id (may not match actual DAG run)")
-    #                 return True, jobid
-    #         else:
-    #             error_msg = f"Script execution failed with exit code {result.returncode}"
-    #             logger.error(f"{error_msg}")
-    #             logger.error(f"   stderr: {result.stderr}")
-    #             logger.error(f"   stdout: {result.stdout}")
-    #             return False, None
-                
-    #     except subprocess.TimeoutExpired:
-    #         error_msg = "Script execution timed out"
-    #         logger.error(f"{error_msg}")
-    #         return False, None
-    #     except Exception as e:
-    #         error_msg = f"Error executing script: {e}"
-    #         logger.error(f" {error_msg}")
-    #         return False, None
 
     def trigger_dag_run(self, jobid, session_id, metadata_url, execution_id, dag_id=None, stats_url=None):
         """Trigger Airflow DAG run and return dag_run_id"""
@@ -200,14 +75,11 @@ class AirflowAdapterService:
                 logger.info(f"Final Job ID: {jobid}-{session_id}")
                 logger.info(f"Metadata URL: {metadata_url}")
                 logger.info(f"Execution ID: {execution_id}")
-            
-            # Execute the bash script with environment variables
-            # Note: metadata_url and stats_url use defaults from trigger_airflow.sh
-            # We don't set them here - script will use its default values
+     
                 env = os.environ.copy()
                 env.update({
                     'JOBID': jobid,
-                    'SESSION_ID': session_id,  # Pass unique session ID from workflow
+                    'SESSION_ID': session_id, 
                     'EXECUTION_ID': execution_id,
                     'DAG_ID': dag_id
                 })
@@ -218,7 +90,7 @@ class AirflowAdapterService:
                 if MWAA_SESSION_TOKEN:
                     env['MWAA_SESSION_TOKEN'] = MWAA_SESSION_TOKEN
             
-            # Step 1: Execute the script (script will trigger the DAG run)
+    
                 logger.info(f"Executing trigger script: {self.script_path}")
                 result = subprocess.run(
                     ['/bin/bash', self.script_path],
@@ -227,14 +99,12 @@ class AirflowAdapterService:
                     timeout=60,
                     env=env
                 )
-            
-            # Log script output (stderr contains the echo statements)
+         
                 if result.stderr:
                     logger.info(f"Script output: {result.stderr.strip()}")
 
                 if result.returncode == 0:
-                # Step 2: Parse the script response to get dag_run_id
-                # The script outputs JSON response from Airflow API to stdout
+       
                     try:
                     # Clean stdout (remove any whitespace)
                         stdout_clean = result.stdout.strip()
@@ -243,17 +113,13 @@ class AirflowAdapterService:
                         response_data = json.loads(stdout_clean)
                     # Log the full response for debugging
                         logger.info(f"Full API response: {json.dumps(response_data, indent=2)}")
-                    
-                    # Check if API returned an error (error responses have 'status' field with non-200 values)
+                
                         api_status = response_data.get('status')
                         if api_status is not None and api_status != 200:
                             error_detail = response_data.get('detail', 'Unknown error')
                             error_title = response_data.get('title', 'Error')
-                        
-                        # Handle 409 Conflict - DAG run already exists (this is OK, we can monitor it)
+           
                             if api_status == 409:
-                            # Extract dag_run_id from error message or use constructed one
-                            # Error format: "DAGRun with DAG ID: 'xxx' and DAGRun ID: 'yyy' already exists"
                                 match = re.search(r"DAGRun ID: '([^']+)'", error_detail)
                                 if match:
                                     existing_dag_run_id = match.group(1)
@@ -271,16 +137,14 @@ class AirflowAdapterService:
                             logger.error(f"   Detail: {error_detail}")
                             # return False, None
                     
-                    # Check if response has 'dag_run_id' (successful creation) or is an error response
                         if 'dag_run_id' not in response_data:
-                        # This is likely an error response without status field, or unexpected format
+          
                             error_detail = response_data.get('detail', response_data.get('message', 'Unknown error'))
                             logger.error(f"Airflow API error: No dag_run_id in response")
                             logger.error(f"   Response: {error_detail}")
                             # return False, None
                     
-                    # Extract dag_run_id from Airflow API response
-                    # Note: Script modifies JOBID by appending SESSION_ID, so dag_run_id will be different
+              
                         dag_run_id = response_data.get('dag_run_id')
                     
                         logger.info(f"Airflow DAG triggered successfully via script")
@@ -288,7 +152,7 @@ class AirflowAdapterService:
                         logger.info(f"   Original Job ID: {jobid}")
                         return True, dag_run_id
                     except json.JSONDecodeError as e:
-                    # If response is not JSON, log error and fallback
+                  
                         logger.error(f"Could not parse script response as JSON: {e}")
                         logger.error(f"   Response was: {result.stdout}")
                         logger.warning(f"Using original jobid as dag_run_id (may not match actual DAG run)")
@@ -353,12 +217,6 @@ class AirflowAdapterService:
             return None, f"Error checking status: {str(e)}"
     
     def wait_for_dag_completion(self, dag_id, dag_run_id, timeout=None):
-        """
-        Poll DAG run status until it completes (success or failed)
-        
-        Returns:
-            (success: bool, final_state: str, error_message: str)
-        """
         timeout = timeout or DAG_MAX_WAIT_TIME
         start_time = time.time()
         poll_interval = DAG_POLL_INTERVAL
@@ -367,13 +225,13 @@ class AirflowAdapterService:
         logger.info(f"   Poll interval: {poll_interval}s, Max wait: {timeout}s")
         
         while True:
-            # Check if timeout exceeded
+        
             elapsed = time.time() - start_time
             if elapsed > timeout:
                 logger.error(f"Timeout waiting for DAG run to complete ({timeout}s)")
                 return False, 'timeout', f"DAG run did not complete within {timeout} seconds"
             
-            # Check status
+  
             state, error = self.check_dag_run_status(dag_id, dag_run_id)
             
             if error:
@@ -387,7 +245,7 @@ class AirflowAdapterService:
             
             logger.info(f"DAG Run Status: {state} (elapsed: {int(elapsed)}s)")
             
-            # Check if DAG run is complete
+        
             if state in ['success', 'failed', 'skipped', 'upstream_failed']:
                 if state == 'success':
                     logger.info(f"DAG run completed successfully")
@@ -396,22 +254,20 @@ class AirflowAdapterService:
                     logger.error(f" DAG run completed with state: {state}")
                     return False, state, f"DAG run ended with state: {state}"
             
-            # Still running, wait and check again
+          
             if state in ['queued', 'running', 'up_for_retry', 'up_for_reschedule']:
                 time.sleep(poll_interval)
                 continue
             
-            # Unknown state
+           
             logger.warning(f"Unknown DAG run state: {state}, continuing to monitor...")
             time.sleep(poll_interval)
     
     
     def publish_completion_event(self, workflow_id, task_id, dag_id, jobid, 
                                   status, error_message=None, metadata_url=None, event_type=None):
-        """Publish completion event to Conductor - Pure event-driven approach"""
+        
         try:
-            # Determine event type based on task_id or use provided event_type
-            # Default to "airflow_dag_completed" for backward compatibility
             if not event_type:
                 if task_id and "name_parse" in task_id.lower():
                     event_type = "name_parse_completed"
@@ -421,7 +277,7 @@ class AirflowAdapterService:
             completion_event = {
                 "workflowId": workflow_id,
                 "taskId": task_id,
-                "eventType": event_type,  # Matches sink in workflow EVENT task
+                "eventType": event_type,  
                 "data": {
                     "dag_id": dag_id,
                     "jobid": jobid,
@@ -432,16 +288,13 @@ class AirflowAdapterService:
                 }
             }
             
-            # Add metadata_url if available
+     
             if metadata_url:
                 completion_event["data"]["metadata_url"] = metadata_url
-            
-            # Add error message if failed
+     
             if status == "failed" and error_message:
                 completion_event["data"]["error"] = error_message
-            
-            # Publish directly to conductor-events (pure event-driven, no API calls)
-            # Conductor's event processor will match this to the EVENT task
+
             self.kafka_producer.send('conductor-events', completion_event)
             self.kafka_producer.flush()
             
@@ -453,33 +306,28 @@ class AirflowAdapterService:
             logger.error(f"Error publishing completion event: {e}", exc_info=True)
     
     def process_task_event(self, event):
-        """Process a task event from Kafka - Simple flow: trigger script and notify Conductor"""
+        
         try:
             workflow_id = event.get('workflowId')
             task_id = event.get('taskId')
             data = event.get('data', {})
-            
-            # Extract Airflow configuration
+
             dag_id = data.get('dag_id', 'nua-nameparse-process-stage-v02-00-06-tiny')
             execution_id = data.get('execution_id', 'WBNameParse')
-            # Extract completion event type from data (if provided), otherwise derive from task_id
+         
             completion_event_type = data.get('completion_event_type')
-            # Note: metadata_url and stats_url use defaults from trigger_airflow.sh
-            # We don't extract or pass them - script will use its default values
-            metadata_url = None  # Not used - script has default
+
+            metadata_url = None  
             
             # Base job ID
             base_jobid = '1000861509'
-            
-            # Generate unique session ID from workflow_id (last 4 characters, padded to 4 digits)
-            # This ensures each workflow run gets a unique DAG run ID
-            #Without unique DAG run Id it will give Non-empty topic error in DAG logs
+ 
             if workflow_id:
-                # Use hash of workflow_id to get consistent 4-digit session ID
+             
                 session_hash = abs(hash(workflow_id)) % 10000
-                session_id = f"{session_hash:04d}" #format the number as 4 digit string with leading zeros.
+                session_id = f"{session_hash:04d}" 
             else:
-                # Fallback to process ID if no workflow_id
+        
                 import os
                 session_id = f"{os.getpid() % 10000:04d}"
             
@@ -493,8 +341,7 @@ class AirflowAdapterService:
             logger.info(f"   Metadata URL: {metadata_url}")
             logger.info(f"   Execution ID: {execution_id}")
             
-            # Step 1: Trigger the DAG run via script
-            # The script (trigger_airflow.sh) will call Airflow API to create the DAG run
+            
             logger.info(f"Step 1: Triggering DAG run via script...")
             trigger_success, dag_run_id = self.trigger_dag_run(
                 jobid=base_jobid,
@@ -503,8 +350,7 @@ class AirflowAdapterService:
                 execution_id=execution_id,
                 dag_id=dag_id
             )
-            
-            #This is to check wether the script has successfully triggerd the DAG run or not 
+ 
             if not trigger_success or not dag_run_id:
                 # Failed to trigger DAG
                 logger.error(f" Failed to trigger DAG run via script")
@@ -521,8 +367,7 @@ class AirflowAdapterService:
                 )
                 return
             
-            # Step 2: Wait for DAG run to complete
-            # Poll Airflow API to check DAG run status until it completes
+ 
             logger.info(f"Step 2: Waiting for DAG run to complete...")
             logger.info(f"Monitoring DAG run: {dag_run_id}")
             dag_success, final_state, error_message = self.wait_for_dag_completion(
@@ -530,13 +375,11 @@ class AirflowAdapterService:
                 dag_run_id=dag_run_id
             )
             
-            # Step 3: Publish completion event to Conductor
-            # Only proceed after DAG run completes (success or failure)
+         
             logger.info(f"Step 3: Publishing completion event to Conductor...")
             full_jobid = f"{base_jobid}-{session_id}"
 
-            
-            """Here we can write the logic to extract the output file from S3 and upload it back to MinIo"""
+  
 
 
             metadata_key=f"conductor-poc/dp_name_parse.json"
@@ -550,7 +393,7 @@ class AirflowAdapterService:
                 output_uri=metadata_data.get('service',{}).get('output',{}).get('uri')
 
             if output_uri:
-                #Here we need to download the output file from S3 and upload it back to MINIO
+            
                 output_key=output_uri.split('/',3)[-1]
                 with tempfile.NamedTemporaryFile(delete=False,suffix=".out") as output_file:
                     s3_manager.download_file(output_key,output_file.name)
@@ -639,11 +482,11 @@ def main():
     logger.info(f"Starting {SERVICE_NAME} Service")
     logger.info(f"Kafka: {KAFKA_BOOTSTRAP}")
     
-    # Wait for services to be ready
+
     logger.info("Waiting 10 seconds for services to initialize...")
     time.sleep(10)
     
-    # Start service
+
     service = AirflowAdapterService()
     service.consume_task_events()
 

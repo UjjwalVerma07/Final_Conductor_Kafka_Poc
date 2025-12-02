@@ -6,25 +6,23 @@ import logging
 import requests
 from kafka import KafkaConsumer
 
-# Configure logging
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Configuration
+
 KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP', 'localhost:9092')
 CONDUCTOR_API = os.getenv('CONDUCTOR_API', 'http://conductor-server:8080/api')
 
-# Optional: Fallback mapping for legacy support (can be empty for fully dynamic mode)
-# This is only used if dynamic discovery fails
 EVENT_TO_TASK_MAPPING = {
     'email_validation_completed': 'wait_for_email_completion',
     'phone_validation_completed': 'wait_for_phone_completion',
     'enrichment_completed': 'wait_for_enrichment_completion',
     'airflow_dag_completed': 'wait_for_airflow_completion',
-    'airflow_completed': 'wait_for_airflow_completion'  # Alternative name
+    'airflow_completed': 'wait_for_airflow_completion'  
 }
 
 class ScalableEventRouter:
@@ -32,22 +30,20 @@ class ScalableEventRouter:
     
     def __init__(self):
         self.conductor_api = CONDUCTOR_API
-        self.event_to_task_map = EVENT_TO_TASK_MAPPING  # Fallback only
+        self.event_to_task_map = EVENT_TO_TASK_MAPPING  
         
     def extract_event_type(self, event):
-        """Extract event type from event (supports both 'event' and 'eventType' fields)"""
-        # Try new format first: "conductor:{workflow_name}:{event_type}"
+
         event_field = event.get('event', '')
         if event_field and ':' in event_field:
-            # Extract event type from "conductor:{workflow_name}:{event_type}"
+
             parts = event_field.split(':')
             if len(parts) >= 3:
-                return parts[-1]  # Last part is the event type
+                return parts[-1]  
         
-        # Fallback to old format
         event_type = event.get('eventType', '')
         if event_type:
-            # Normalize event type (ensure it ends with _completed if it's a completion event)
+         
             if '_completed' not in event_type and '_request' in event_type:
                 return event_type.replace('_request', '_completed')
             return event_type
@@ -55,15 +51,13 @@ class ScalableEventRouter:
         return None
     
     def normalize_sink_to_event_type(self, sink):
-        """Normalize sink format to match event type"""
-        # Sink format: "conductor:email_validation_completed" or "conductor:workflow_name:event_type"
         if not sink:
             return None
         
         if ':' in sink:
             parts = sink.split(':')
             if len(parts) >= 2:
-                # Return the last part (event type)
+        
                 return parts[-1]
         
         return sink
@@ -84,7 +78,7 @@ class ScalableEventRouter:
                 workflow_data = response.json()
                 tasks = workflow_data.get('tasks', [])
                 
-                # Strategy 1: Use taskId from event if provided (most direct match)
+         
                 if task_id_from_event:
                     matching_task = next((t for t in tasks if t.get('taskId') == task_id_from_event), None)
                     if matching_task and matching_task.get('taskType') == 'EVENT':
@@ -93,34 +87,32 @@ class ScalableEventRouter:
                         task_status = matching_task.get('status', 'UNKNOWN')
                         return task_id, task_ref_name, task_status
                 
-                # Strategy 2: Find IN_PROGRESS EVENT tasks and match by sink
+           
                 in_progress_event_tasks = [
                     t for t in tasks 
                     if t.get('taskType') == 'EVENT' and t.get('status') == 'IN_PROGRESS'
                 ]
-                
-                # Normalize event type for matching
+            
                 normalized_event_type = event_type.lower() if event_type else None
                 
                 for task in in_progress_event_tasks:
-                    # Get sink from task inputData (Conductor stores sink in inputData)
+        
                     task_sink = task.get('inputData', {}).get('sink') or task.get('sink')
                     
                     if task_sink:
-                        # Normalize sink to event type
+                   
                         sink_event_type = self.normalize_sink_to_event_type(task_sink)
                         
-                        # Match event type to sink
+               
                         if sink_event_type and normalized_event_type:
-                            # Direct match
+                      
                             if sink_event_type.lower() == normalized_event_type.lower():
                                 task_id = task.get('taskId')
                                 task_ref_name = task.get('referenceTaskName')
                                 task_status = task.get('status', 'UNKNOWN')
                                 logger.info(f"Found matching EVENT task by sink: {task_ref_name} (sink: {task_sink})")
                                 return task_id, task_ref_name, task_status
-                            
-                            # Partial match (e.g., "email_validation_completed" matches "conductor:email_validation_completed")
+                     
                             if normalized_event_type in sink_event_type.lower() or sink_event_type.lower() in normalized_event_type:
                                 task_id = task.get('taskId')
                                 task_ref_name = task.get('referenceTaskName')
@@ -128,7 +120,7 @@ class ScalableEventRouter:
                                 logger.info(f"Found matching EVENT task by partial sink match: {task_ref_name} (sink: {task_sink})")
                                 return task_id, task_ref_name, task_status
                 
-                # Strategy 3: Fallback to hardcoded mapping
+
                 task_ref_name = self.event_to_task_map.get(event_type)
                 if task_ref_name:
                     matching_task = next((t for t in tasks if t.get('referenceTaskName') == task_ref_name), None)
@@ -138,7 +130,7 @@ class ScalableEventRouter:
                         logger.info(f" Found EVENT task using fallback mapping: {task_ref_name}")
                         return task_id, task_ref_name, task_status
                 
-                # Task not found yet, might still be scheduled
+       
                 if attempt < max_retries - 1:
                     logger.debug(f"EVENT task for event type '{event_type}' not found yet, retrying in {retry_delay}s... (attempt {attempt + 1}/{max_retries})")
                     time.sleep(retry_delay)
@@ -159,7 +151,6 @@ class ScalableEventRouter:
     
     
     def complete_event_task(self, workflow_id, task_id, output_data, status='COMPLETED'):
-        """Complete EVENT task via Conductor API"""
         try:
             response = requests.post(
                 f"{self.conductor_api}/tasks",
@@ -183,20 +174,20 @@ class ScalableEventRouter:
                 logger.warning("Event missing workflowId/workflowInstanceId, skipping")
                 return
             
-            # Extract event type
+          
             event_type = self.extract_event_type(event)
             if not event_type:
                 logger.warning(f"Could not extract event type from event: {event.get('event', event.get('eventType', 'unknown'))}")
                 return
             
-            # Get taskId from event if available (most direct match)
+      
             task_id_from_event = event.get('taskId')
             
             logger.info(f"Processing completion event: {event_type} for workflow {workflow_id}")
             if task_id_from_event:
                 logger.info(f"   Task ID from event: {task_id_from_event}")
             
-            # Dynamically find matching EVENT task
+    
             task_id, task_ref_name, task_status = self.find_matching_event_task(
                 workflow_id, 
                 event_type, 
@@ -211,15 +202,15 @@ class ScalableEventRouter:
                 logger.warning(f"EVENT task '{task_ref_name}' status is {task_status}, not IN_PROGRESS. Skipping.")
                 return
             
-            # Prepare output data
+       
             event_data = event.get('data', {})
-            output_data = event_data.copy()  # Use all data from event
+            output_data = event_data.copy()  
             
-            # Determine status (success or failure)
+       
             result = event_data.get('result', 'success')
             status = 'COMPLETED' if result == 'success' else 'FAILED'
             
-            # Complete the EVENT task
+            
             success = self.complete_event_task(workflow_id, task_id, output_data, status)
             if success:
                 logger.info(f"Completed EVENT task '{task_ref_name}' for workflow {workflow_id}")
@@ -231,7 +222,7 @@ class ScalableEventRouter:
             logger.error(f" Error processing completion event: {e}", exc_info=True)
     
     def consume_and_complete(self):
-        """Consume events from Kafka and complete EVENT tasks"""
+       
         consumer = KafkaConsumer(
             'conductor-events',
             bootstrap_servers=KAFKA_BOOTSTRAP,
@@ -247,7 +238,7 @@ class ScalableEventRouter:
             try:
                 event = message.value
                 
-                # Handle both JSON object and string cases
+    
                 if isinstance(event, str):
                     try:
                         event = json.loads(event)
@@ -255,11 +246,11 @@ class ScalableEventRouter:
                         logger.warning(f"Failed to parse JSON string: {event[:100]}")
                         continue
                 
-                # Skip non-completion events
+             
                 event_str = event.get('event', '')
                 event_type_str = event.get('eventType', '')
                 
-                # Check if this is a completion event
+          
                 is_completion = (
                     ('_completed' in event_str) or 
                     ('_completed' in event_type_str) or
@@ -275,16 +266,16 @@ class ScalableEventRouter:
                 logger.error(f" Error processing message: {e}", exc_info=True)
 
 def main():
-    """Start the Scalable Event Router"""
+
     logger.info("Starting Scalable Conductor Event Router Service")
     logger.info(f" Kafka: {KAFKA_BOOTSTRAP}")
     logger.info(f" Conductor: {CONDUCTOR_API}")
     
-    # Wait for services to be ready
+    
     logger.info(" Waiting 10 seconds for services to initialize...")
     time.sleep(10)
     
-    # Start router
+
     router = ScalableEventRouter()
     router.consume_and_complete()
 

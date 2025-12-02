@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Enricher Service - MinIO File Processing
-Processes CSV files from MinIO, enriches data, uploads results
-"""
+
 
 import os
 import json
@@ -15,14 +12,14 @@ from minio import Minio
 from minio.error import S3Error
 import io
 
-# Configure logging
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Configuration
+
 KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP', 'localhost:9092')
 SERVICE_NAME = os.getenv('SERVICE_NAME', 'enricher')
 MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT', 'minio:9000')
@@ -30,14 +27,14 @@ MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY', 'minioadmin')
 MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY', 'minioadmin')
 MINIO_BUCKET = os.getenv('MINIO_BUCKET', 'enrichment')
 
-# Initialize Kafka producer
+
 kafka_producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP,
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
 class EnricherService:
-    """MinIO-based data enrichment service"""
+ 
     
     def __init__(self):
         self.kafka_producer = kafka_producer
@@ -50,7 +47,7 @@ class EnricherService:
         self._ensure_bucket_exists()
     
     def _ensure_bucket_exists(self):
-        """Ensure MinIO bucket exists"""
+      
         try:
             if not self.minio_client.bucket_exists(MINIO_BUCKET):
                 self.minio_client.make_bucket(MINIO_BUCKET)
@@ -59,7 +56,7 @@ class EnricherService:
             logger.error(f" Error creating bucket: {e}")
     
     def _ensure_output_bucket_exists(self, bucket_name):
-        """Ensure output bucket exists"""
+      
         try:
             if not self.minio_client.bucket_exists(bucket_name):
                 self.minio_client.make_bucket(bucket_name)
@@ -70,7 +67,7 @@ class EnricherService:
             logger.error(f" Error creating output bucket: {e}")
     
     def download_file(self, bucket, key):
-        """Download file from MinIO"""
+
         try:
             response = self.minio_client.get_object(bucket, key)
             data = response.read()
@@ -83,7 +80,7 @@ class EnricherService:
             raise
     
     def upload_file(self, bucket, key, data):
-        """Upload file to MinIO"""
+     
         try:
             data_stream = io.BytesIO(data)
             self.minio_client.put_object(
@@ -95,9 +92,9 @@ class EnricherService:
             raise
     
     def enrich_data(self, df):
-        """Enrich data with additional information"""
+    
         try:
-            # Add enrichment columns
+            
             df['customer_segment'] = df.apply(lambda x: self._get_customer_segment(x), axis=1)
             df['risk_score'] = df.apply(lambda x: self._calculate_risk_score(x), axis=1)
             df['enrichment_timestamp'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -108,31 +105,29 @@ class EnricherService:
             raise
     
     def _get_customer_segment(self, row):
-        """Determine customer segment based on data"""
-        # Mock logic - in real implementation, this would use ML models or business rules
+    
         segments = ['Premium', 'Standard', 'Basic']
         return random.choice(segments)
     
     def _calculate_risk_score(self, row):
-        """Calculate risk score for customer"""
-        # Mock logic - in real implementation, this would use actual risk models
+
         return round(random.uniform(0.1, 1.0), 2)
     
     def process_csv_file(self, csv_data):
-        """Process CSV file and enrich data"""
+
         try:
-            # Read CSV from bytes
+           
             df = pd.read_csv(io.BytesIO(csv_data))
             logger.info(f" Processing CSV with {len(df)} rows")
             
-            # Enrich data
+           
             enriched_df = self.enrich_data(df)
             
-            # Calculate statistics
-            total_records = len(enriched_df)
-            enriched_records = total_records  # All records get enriched
             
-            # Convert back to CSV
+            total_records = len(enriched_df)
+            enriched_records = total_records 
+            
+           
             output_csv = enriched_df.to_csv(index=False)
             
             logger.info(f" Data enrichment completed: {enriched_records} records enriched")
@@ -148,14 +143,13 @@ class EnricherService:
             workflow_id = event.get('workflowId')
             task_id = event.get('taskId')
             data = event.get('data', {})
-            
-            # Extract MinIO file information
+     
             input_bucket = data.get('input_bucket')
             input_key = data.get('input_key')
             output_bucket = data.get('output_bucket')
             output_key = data.get('output_key')
             
-            # Fix null values in output_key by using workflow_id
+  
             if output_key and 'null' in output_key:
                 output_key = f'enriched_{workflow_id}.csv'
             
@@ -163,24 +157,23 @@ class EnricherService:
             logger.info(f" Input: {input_bucket}/{input_key}")
             logger.info(f" Output: {output_bucket}/{output_key}")
             
-            # Sleep for 10 seconds to simulate processing time
+
             logger.info(" Sleeping for 10 seconds to simulate processing time...")
             time.sleep(10)
             logger.info(" Sleep completed, continuing with processing...")
             
-            # Ensure output bucket exists
+
             self._ensure_output_bucket_exists(output_bucket)
             
-            # Download input file
+      
             input_data = self.download_file(input_bucket, input_key)
-            
-            # Process CSV file
+        
             output_data, enriched_count, failed_count = self.process_csv_file(input_data)
             
-            # Upload processed file
+       
             self.upload_file(output_bucket, output_key, output_data)
             
-            # Publish result event
+    
             result_event = {
                 "workflowId": workflow_id,
                 "taskId": task_id,
@@ -198,10 +191,9 @@ class EnricherService:
                 }
             }
             
-            # Publish directly to Conductor
+          
             self.kafka_producer.send('conductor-events', result_event)
-            """Publish to this Kafka topic also we will update it later"""
-            #self.kafka_producer.send('enrichment-results', result_event)
+   
             self.kafka_producer.flush()
             
             logger.info(f" Data enrichment completed: {enriched_count} records enriched")
@@ -209,7 +201,7 @@ class EnricherService:
         except Exception as e:
             logger.error(f" Error processing data enrichment: {e}", exc_info=True)
             
-            # Publish failure event
+          
             failure_event = {
                 "workflowId": event.get('workflowId', 'unknown'),
                 "taskId": event.get('taskId', 'unknown'),
@@ -222,13 +214,12 @@ class EnricherService:
                 }
             }
             
-            # Publish failure directly to Conductor
-            #Here also we are directly publishing to the Conductor events topic
+          
             self.kafka_producer.send('conductor-events', failure_event)
             self.kafka_producer.flush()
     
     def consume_task_events(self):
-        """Consume task events from Kafka"""
+   
         consumer = KafkaConsumer(
             'enrichment-requests',
             bootstrap_servers=KAFKA_BOOTSTRAP,
@@ -243,7 +234,6 @@ class EnricherService:
             try:
                 event = message.value
                 
-                # Handle both JSON object and string cases
                 if isinstance(event, str):
                     try:
                         event = json.loads(event)
@@ -268,11 +258,11 @@ def main():
     logger.info(f" Kafka: {KAFKA_BOOTSTRAP}")
     logger.info(f" MinIO: {MINIO_ENDPOINT}")
     
-    # Wait for services to be ready
+
     logger.info(" Waiting 10 seconds for services to initialize...")
     time.sleep(10)
     
-    # Start service
+
     service = EnricherService()
     service.consume_task_events()
 

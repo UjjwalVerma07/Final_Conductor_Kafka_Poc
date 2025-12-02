@@ -26,17 +26,16 @@ def triggerConductorWorkflow(
     if response.status_code not in (200, 201):
         raise Exception(f"Failed to trigger workflow: {response.text}")
 
-    # Debug print response
+ 
     print("Raw Response:", response.text)
 
     try:
-        # Try parsing JSON normally
+      
         data = response.json()
         workflow_id = data.get("workflowId") or data
 
     except ValueError:
-        # Fallback if plain text or extra characters present
-        # Remove quotes or whitespace
+      
         cleaned = response.text.strip().replace('"', '').replace("'", "")
         workflow_id = cleaned
 

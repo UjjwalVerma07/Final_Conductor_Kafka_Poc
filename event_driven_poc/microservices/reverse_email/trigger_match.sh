@@ -6,7 +6,7 @@ METADATA_URL="${METADATA_URL:-s3://958825666686-dpservices-testing-data/conducto
 EXECUTION_ID="${EXECUTION_ID:-WBReverseEmail_Match}"
 DAG_ID="${DAG_ID:-nua-match-process-stage-v01-01-04-tiny}"
 MWAA_ENDPOINT="${MWAA_ENDPOINT:-https://a53c6d7a-ec07-465a-9824-6cc199145a7a-vpce.c75.us-east-1.airflow.amazonaws.com:443}"
-MWAA_SESSION_TOKEN="${MWAA_SESSION_TOKEN:-95033acf-cef2-408c-9740-cd997701ce94.-nNO2hXdybJmNCrudLXXa43kfLg}"
+MWAA_SESSION_TOKEN="${MWAA_SESSION_TOKEN:-a1026782-f589-4a07-89c1-b524dcdee331.3xT5sOy9IcOxdu0YuMjqpc-Z4yc}"
 
 # Optional STATS_URL
 STATS_URL="${STATS_URL:-scp://abinitio@papdpsetld003l.intra.infousa.com//abi/log/UQU_1001013123.4472.stats.jsonl}"

@@ -1,9 +1,5 @@
 # /usr/bin/env python
 
-"""
-Reverse Email Microservice
-Simple service that triggers Reverse Email Airflow DAGs via script
-"""
 
 import os 
 import json 
@@ -13,23 +9,23 @@ import logging
 import requests
 from kafka import KafkaConsumer, KafkaProducer
 
-#Configure logging
+
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 logger=logging.getLogger(__name__)
 
-#Configuration 
+
 KAFKA_BOOTSTRAP=os.getenv('KAFKA_BOOTSTRAP','localhost:9092')
 SERVICE_NAME=os.getenv('SERVICE_NAME','email_hygiene_service')
 
-# MWAA Configuration
+
 MWAA_ENDPOINT = os.getenv('MWAA_ENDPOINT', 'https://a53c6d7a-ec07-465a-9824-6cc199145a7a-vpce.c75.us-east-1.airflow.amazonaws.com:443')
 MWAA_SESSION_TOKEN = os.getenv('MWAA_SESSION_TOKEN', '')
 
-# DAG Monitoring Configuration
-DAG_POLL_INTERVAL = int(os.getenv('DAG_POLL_INTERVAL', '10'))  # seconds between status checks
-DAG_MAX_WAIT_TIME = int(os.getenv('DAG_MAX_WAIT_TIME', '3600'))  # max time to wait (1 hour default)
+
+DAG_POLL_INTERVAL = int(os.getenv('DAG_POLL_INTERVAL', '10')) 
+DAG_MAX_WAIT_TIME = int(os.getenv('DAG_MAX_WAIT_TIME', '3600')) 
 
 SCRIPT_PATH1=os.path.join(os.path.dirname(__file__),'trigger_match.sh')
 SCRIPT_PATH2=os.path.join(os.path.dirname(__file__),'trigger_append.sh')
@@ -40,19 +36,19 @@ kafka_producer=KafkaProducer(
 )
 
 class ReverseEmailService:
-    """Reverse Email Microservice Class"""
+   
 
     def __init__(self):
         self.kafka_producer=kafka_producer
         self.script_path1=SCRIPT_PATH1
         self.script_path2=SCRIPT_PATH2
 
-        os.chmod(self.script_path1, 0o755)  # Ensure script is executable
+        os.chmod(self.script_path1, 0o755) 
         os.chmod(self.script_path2,0o755)
         
 
     def trigger_dag_run(self, script_name, jobid, session_id, metadata_url, execution_id, dag_id, stats_url=None):
-        """Trigger Airflow DAG run using individual scripts"""
+ 
         try:
             script_path = os.path.join(os.path.dirname(__file__), script_name)
             os.chmod(script_path, 0o755)
@@ -71,7 +67,7 @@ class ReverseEmailService:
             if stats_url:
                 env['STATS_URL'] = stats_url
 
-        # Pass MWAA config
+       
             if MWAA_ENDPOINT:
                 env['MWAA_ENDPOINT'] = MWAA_ENDPOINT
             if MWAA_SESSION_TOKEN:
@@ -116,7 +112,7 @@ class ReverseEmailService:
 
     
     def check_dag_run_status(self,dag_id,dag_run_id):
-        """Check the status of a DAG run using Airflow API"""
+        
         try:
             endpoint=MWAA_ENDPOINT
             session_token=MWAA_SESSION_TOKEN
@@ -149,11 +145,7 @@ class ReverseEmailService:
 
     
     def wait_for_dag_completion(self,dag_id,dag_run_id,timeout=None):
-        """
-        Poll DAG run status until it completes (success or failed)
-        Returs:
-           (success:bool,final_state:str,error_message:str)
-        """
+        
 
         timeout=timeout or DAG_MAX_WAIT_TIME
         start_time=time.time()
@@ -196,7 +188,7 @@ class ReverseEmailService:
 
 
     def publish_completion_event(self,workflow_id,task_id,match_dag_id,append_dag_id,jobid,status,error_message,metadata_url):
-        """Publish task completion event to Kafka"""
+ 
         event_type="reverse_email_completed"
         event={
             "eventType":event_type,
@@ -222,7 +214,7 @@ class ReverseEmailService:
         logger.info(f"Match DAG ID:{match_dag_id}, Append DAG ID:{append_dag_id}, Job ID:{jobid}")
 
     def process_task_event(self, event):
-        """Process a task event: trigger MATCH and APPEND DAGs sequentially"""
+      
         try:
             workflow_id = event.get("workflowId")
             task_id = event.get("taskId")
@@ -243,7 +235,7 @@ class ReverseEmailService:
             logger.info(f"Workflow ID: {workflow_id}, Task ID: {task_id}")
             logger.info(f"Session ID: {session_id}, Base Job ID: {base_jobid}")
 
-        # ---------------- Step 1: Trigger MATCH Script ---------------- #
+       
             logger.info("Triggering MATCH DAG script...")
             match_success, match_dag_run_id = self.trigger_dag_run(
             script_name="trigger_match.sh",
@@ -252,7 +244,7 @@ class ReverseEmailService:
             metadata_url=match_metadata_url,
             execution_id=match_exec_id,
             dag_id=match_dag_id
-            ) #Will trigger the dag and return the script output
+            ) 
 
             if not match_success or not match_dag_run_id:
                 self.publish_completion_event(
@@ -265,12 +257,12 @@ class ReverseEmailService:
                 )
                 return
 
-        # ---------------- Step 2: Wait for MATCH DAG to complete ---------------- #
+        
             logger.info("Waiting for MATCH DAG to complete...")
             dag_success, final_state, error_message = self.wait_for_dag_completion(
                 dag_id=match_dag_id,
                 dag_run_id=match_dag_run_id
-            ) #Here will wait for the dag to complete 
+            ) 
 
             if not dag_success:
                 self.publish_completion_event(
@@ -283,7 +275,7 @@ class ReverseEmailService:
                 )
                 return
 
-        # ---------------- Step 3: Trigger APPEND Script ---------------- #
+        
             logger.info("MATCH DAG succeeded, triggering APPEND DAG script...")
             append_success, append_dag_run_id = self.trigger_dag_run(
                 script_name="trigger_append.sh",
@@ -292,7 +284,7 @@ class ReverseEmailService:
                 metadata_url=append_metadata_url,
                 execution_id=append_exec_id,
                 dag_id=append_dag_id
-            ) #Here it means that the script and executed succesfully
+            ) 
 
             if not append_success or not append_dag_run_id:
                 self.publish_completion_event(
@@ -305,14 +297,14 @@ class ReverseEmailService:
                 )
                 return
 
-        # ---------------- Step 4: Wait for APPEND DAG to complete ---------------- #
+       
             logger.info("Waiting for APPEND DAG to complete...")
             dag_success, final_state, error_message = self.wait_for_dag_completion(
                 dag_id=append_dag_id,
                 dag_run_id=append_dag_run_id
             )
 
-        # ---------------- Step 5: Publish final completion event ---------------- #
+        
             self.publish_completion_event(
                 workflow_id, task_id,
                 match_dag_id, append_dag_id,
@@ -341,7 +333,7 @@ class ReverseEmailService:
 
     
     def consume_task_events(self):
-        """Consume task events from Kafka and process them"""
+    
         consumer=KafkaConsumer(
             'reverse-email-requests',
             bootstrap_servers=KAFKA_BOOTSTRAP,
@@ -357,7 +349,6 @@ class ReverseEmailService:
             try:
                 event=message.value
 
-                # Handles both JSON object and string cases
                 if isinstance(event,str):
                     try:
                         event=json.loads(event)
@@ -373,7 +364,6 @@ class ReverseEmailService:
                 logger.error(f"Error processing message: {e}",exc_info=True)
     
 def main():
-    """Main function to start the Reverse Email Service"""
     logger.info("Starting Reverse Email Service...")
     logger.info(f"Kafka Bootstrap Servers: {KAFKA_BOOTSTRAP}")
 
