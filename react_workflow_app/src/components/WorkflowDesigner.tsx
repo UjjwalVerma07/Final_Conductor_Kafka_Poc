@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { postWorkflowToFastAPI } from '../api/conductorApi';
+import { useEffect } from 'react';
 // WorkflowDesigner: minimal canvas + palette to compose service nodes.
 // Only the first Email node accepts a file/key input; all other details are derived.
 import ReactFlow, {
@@ -76,6 +77,40 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
     type: 'success' | 'error' | 'info' | null;
     message: string;
   }>({ type: null, message: '' });
+
+
+
+
+   //We can add the lOGIC FOR THE
+  useEffect(() => {
+  const ws = new WebSocket("ws://localhost:8000/ws");
+
+  ws.onopen = () => {
+    console.log("✅ WebSocket connected");
+  };
+
+  ws.onmessage = (event) => {
+    console.log("📩 WebSocket message received:", event.data);
+
+    try {
+      const parsed = JSON.parse(event.data);
+      console.log("Parsed WS data:", parsed);
+    } catch (err) {
+      console.log("Raw WS string:", event.data);
+    }
+  };
+
+  ws.onerror = (err) => {
+    console.error("❌ WebSocket error:", err);
+  };
+
+  ws.onclose = () => {
+    console.log("🔌 WebSocket disconnected");
+  };
+
+  return () => ws.close();
+}, []);
+
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -303,7 +338,7 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
 
     setPostStatus({
       type: 'success',
-      message: `Workflow deployed successfully! Run ID: ${result.runId}`,
+      message: `Workflow deployed successfully! Workflow ID: ${result.workflow_instance_id}`,
     });
 
     console.log('Workflow submission result:', result);

@@ -11,12 +11,47 @@ import subprocess
 from s3_utils import S3Manager
 from config import Config
 from dotenv import load_dotenv
-
+from fastapi import WebSocket
+import json 
+from minio_utils import MinIOManager
+import logging
+active_ws_connections=set()
 
 load_dotenv()
 
+minio_manager=MinIOManager()
 
-app = FastAPI(title="Ingestion Service", version="1.1.0")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+from contextlib import asynccontextmanager
+import threading
+import asyncio
+from contextlib import asynccontextmanager
+import threading
+import asyncio
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    loop = asyncio.get_running_loop()
+
+    # Start Kafka consumer in background thread
+    consumer_thread = threading.Thread(target=start_kafka_consumer, args=(loop,), daemon=True)
+    consumer_thread.start()
+    print("Kafka consumer thread started")
+
+    yield  # app runs here
+
+    print("Shutting down...")
+
+
+
+app = FastAPI(title="Ingestion Service", version="1.1.0",lifespan=lifespan)
 
 
 app.add_middleware(
@@ -254,3 +289,167 @@ async def deploy_workflow(payload: WorkflowPayload):
             status_code=500,
             detail=f"Failed to deploy workflow: {str(e)}"
         )
+
+from fastapi import WebSocket, WebSocketDisconnect
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    active_ws_connections.add(websocket)
+    print(f"WebSocket connected: {websocket.client}")
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        print(f"WebSocket disconnected: {websocket.client}")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    finally:
+        active_ws_connections.remove(websocket)
+
+
+
+import asyncio
+
+async def push_to_ui(message: dict):
+    """
+    Sends real-time updates to all active WebSocket connections.
+    """
+    if not active_ws_connections:
+        return
+    data = json.dumps(message)
+    for ws in active_ws_connections.copy():
+        try:
+            await ws.send_text(data)
+        except Exception as e:
+            print("Failed to send WS message:", e)
+            active_ws_connections.remove(ws)
+
+from kafka import KafkaConsumer
+import threading
+from fastapi import HTTPException
+import requests
+KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP', 'localhost:9092')
+TOPIC_NAME=os.getenv("STATS_TOPIC","conductor-events")
+CONDUCTOR_BASE_URL="http://localhost:8080/api"
+
+def process_retry(workflow_id,event):
+    #Here i think we again need to send that the process has failed and lets enable the retry button to retry the logic from the particular task to end of the workflow 
+    url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}"
+    response=requests.get(url)
+    print(response.json())
+
+    if response.status_code !=200:
+        raise HTTPException(status_code=404,detail="Workflow Not Found")
+    
+    wf=response.json()
+    tasks=wf.get("tasks",[])
+    if not tasks:
+        raise Exception("No tasks found in Workflow Execution")
+    
+    #Lets Find the First Failed Tasks 
+    failed_index=None
+
+    for i,t in enumerate(tasks):
+        if t["status"]=="FAILED":
+            failed_index=i
+            break
+
+    if failed_index is None:
+        print("No failed tasks-nothing to rerun")
+        return None
+    
+    failed_task=tasks[failed_index]
+    failed_ref=failed_task["taskReferenceName"]
+    failed_type=failed_task["taskType"]
+
+    print(f"Failed Tasks is {failed_task} and Failed Type is {failed_type}")
+    #Determine The restart index
+    #Event tasks fails start from the previous task (Kafka_Publish)
+    if failed_type=="EVENT" or failed_ref.startswith("wait_for_"):
+        start_index=failed_index-1
+    else:
+        start_index=failed_index
+
+    if start_index<0:
+        start_index=0
+    
+    start_task=tasks[start_index]
+    start_ref=start_task["taskReferenceName"]
+    print(f"Restarting from tasks : {start_ref}")
+
+    #Collect all downstreams tasks from that index
+    reset_task_refs=[
+        t["taskReferenceName"] for t in tasks[start_index:]
+    ]
+
+    print(f"Tasks to reset: {reset_task_refs}")
+    rerun_url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
+
+    payload={
+        "workflowId":workflow_id,
+        "taskRefName":start_ref,
+        "resetTasks":reset_task_refs
+    }
+
+    print("Sending rerun requests to Conductor....")
+    print(payload)
+
+
+    rerun_response=requests.post(rerun_url,json=payload)
+
+    if rerun_response.status_code>=300:
+        raise Exception(
+            f"Rerun failed: {rerun_response.status_code}-{rerun_response.text}"
+        )
+    
+    print("Workflow Rerun triggered Successfully")
+    return rerun_response.json()
+    
+
+def start_kafka_consumer(loop):
+    consumer = KafkaConsumer(
+        "conductor-events",
+        bootstrap_servers=KAFKA_BOOTSTRAP,
+        value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+        auto_offset_reset="latest",
+        group_id="ingestion-service-group",
+    )
+
+    print("Kafka Consumer started, listening for stats events...")
+
+    for msg in consumer:
+        event = msg.value
+        stats_url = event.get("data", {}).get("stats_url")
+        workflow_id = event.get("workflowId")
+        status=event.get("data",{}).get("status",'')
+        if status=="failed":
+            process_retry(workflow_id,event)
+        logger.info(f"The Status Received is : {status}")
+        logger.info(f"Workflow Id Received is : {workflow_id}")
+        logger.info(f"Stats Url Received is : {stats_url}")
+        
+
+        if stats_url:
+            print(f"Received Stats URL: {stats_url}")
+
+            # Download file from MinIO
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jsonl") as stats_file:
+                minio_manager.download_file(stats_url, stats_file.name)
+                stats_file_path = stats_file.name
+
+            with open(stats_file_path, "r") as f:
+                stats_data = f.read()
+                logger.info(f"Stats Data Received is : {stats_data}")
+
+            # Push to UI via WebSocket using existing event loop
+            if loop and active_ws_connections:
+                asyncio.run_coroutine_threadsafe(
+                    push_to_ui({
+                        "workflow_id": workflow_id,
+                        "stats_url": stats_url,
+                        "content": stats_data
+                    }),
+                    loop
+                )
+

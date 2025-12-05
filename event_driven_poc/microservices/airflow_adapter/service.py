@@ -11,8 +11,8 @@ from kafka import KafkaConsumer, KafkaProducer
 import tempfile
 from s3_utils import S3Manager
 from minio_utils import MinIOManager
-
-
+import uuid
+from config import Config
 s3_manager=S3Manager()
 minio_manager=MinIOManager()
 
@@ -81,7 +81,8 @@ class AirflowAdapterService:
                     'JOBID': jobid,
                     'SESSION_ID': session_id, 
                     'EXECUTION_ID': execution_id,
-                    'DAG_ID': dag_id
+                    'DAG_ID': dag_id,
+                    'STATS_URL':stats_url
                 })
             
             # Pass MWAA config
@@ -205,18 +206,18 @@ class AirflowAdapterService:
             if response.status_code == 200:
                 dag_run_data = response.json()
                 state = dag_run_data.get('state', 'unknown')
-                return state, None
+                return state, None,dag_run_data
             elif response.status_code == 404:
-                return None, f"DAG run not found: {dag_run_id}"
+                return None, f"DAG run not found: {dag_run_id}",None
             else:
-                return None, f"API error: {response.status_code} - {response.text}"
+                return None, f"API error: {response.status_code} - {response.text}",None
                 
         except requests.exceptions.RequestException as e:
             return None, f"Network error: {str(e)}"
         except Exception as e:
             return None, f"Error checking status: {str(e)}"
     
-    def wait_for_dag_completion(self, dag_id, dag_run_id, timeout=None):
+    def wait_for_dag_completion(self, dag_id, dag_run_id, timeout=None,workflow_id=None):
         timeout = timeout or DAG_MAX_WAIT_TIME
         start_time = time.time()
         poll_interval = DAG_POLL_INTERVAL
@@ -232,7 +233,7 @@ class AirflowAdapterService:
                 return False, 'timeout', f"DAG run did not complete within {timeout} seconds"
             
   
-            state, error = self.check_dag_run_status(dag_id, dag_run_id)
+            state, error,response_data = self.check_dag_run_status(dag_id, dag_run_id)
             
             if error:
                 logger.error(f"Error checking status: {error}")
@@ -248,6 +249,30 @@ class AirflowAdapterService:
         
             if state in ['success', 'failed', 'skipped', 'upstream_failed']:
                 if state == 'success':
+                    """Here we can add the logic for downloading the stats file locally """
+
+
+                    #s3_input_key = f"{Config.S3_PREFIX}/runs/{workflow_id}/{input_filename}"
+                    if response_data is not None:
+                        stats_url=response_data.get('conf',{}).get('stats_url','')
+                        logger.info(f"Stats Url Fetched is : {stats_url}")
+                        stats_url=stats_url.replace("s3://","").split("/",1)
+                        logger.info(f"Updated Stats URL : {stats_url}")
+                        stats_bucket=stats_url[0]
+                        stats_key=stats_url[1]
+                        logger.info(f"Stats Bucket : {stats_bucket}")
+                        logger.info(f"Stats Key : {stats_key}")
+                        input_key=f"conductor-poc/runs/{workflow_id}/NameParse_Stats_URL.jsonl"
+
+                        with tempfile.NamedTemporaryFile(delete=False,suffix=".jsonl") as stats_file:
+                            s3_manager.download_file(input_key,stats_file.name)
+                            minio_manager.upload_file(stats_file.name,bucket="name-parse-output",object_key="NameParse_Stats.jsonl")
+                            logger.info(f"Stats File is Uploaded to MINIO")
+                            logger.info(f"Stats file is now downloaded from {input_key} and saved locally : {stats_file.name}")
+                    logger.info(f"DAG run completed successfully..")
+
+
+
                     logger.info(f"DAG run completed successfully")
                     return True, state, None
                 else:
@@ -284,7 +309,8 @@ class AirflowAdapterService:
                     "status": status,
                     "result": "success" if status == "success" else "failure",
                     "pipelineStage": "airflow_processing",
-                    "timestamp": time.strftime('%Y-%m-%dT%H:%M:%SZ')
+                    "timestamp": time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    "stats_url":"minio://name-parse-output/NameParse_Stats.jsonl"
                 }
             }
             
@@ -322,14 +348,7 @@ class AirflowAdapterService:
             # Base job ID
             base_jobid = '1000861509'
  
-            if workflow_id:
-             
-                session_hash = abs(hash(workflow_id)) % 10000
-                session_id = f"{session_hash:04d}" 
-            else:
-        
-                import os
-                session_id = f"{os.getpid() % 10000:04d}"
+            session_id = str(uuid.uuid4())[:8]
             
             logger.info(f"Processing Airflow trigger request")
             logger.info(f"   Workflow ID: {workflow_id}")
@@ -343,12 +362,15 @@ class AirflowAdapterService:
             
             
             logger.info(f"Step 1: Triggering DAG run via script...")
+            """Here we can create the stats url and pass it to trigger_dag_run fucntion"""
+            stats_url=f"s3://{Config.S3_BUCKET}/{Config.S3_PREFIX}/runs/{workflow_id}/NameParse_Stats_URL.jsonl"
             trigger_success, dag_run_id = self.trigger_dag_run(
                 jobid=base_jobid,
                 session_id=session_id,
                 metadata_url=metadata_url,
                 execution_id=execution_id,
-                dag_id=dag_id
+                dag_id=dag_id,
+                stats_url=stats_url
             )
  
             if not trigger_success or not dag_run_id:
@@ -372,7 +394,8 @@ class AirflowAdapterService:
             logger.info(f"Monitoring DAG run: {dag_run_id}")
             dag_success, final_state, error_message = self.wait_for_dag_completion(
                 dag_id=dag_id,
-                dag_run_id=dag_run_id
+                dag_run_id=dag_run_id,
+                workflow_id=workflow_id
             )
             
          
