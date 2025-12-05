@@ -331,80 +331,110 @@ from fastapi import HTTPException
 import requests
 KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP', 'localhost:9092')
 TOPIC_NAME=os.getenv("STATS_TOPIC","conductor-events")
-CONDUCTOR_BASE_URL="http://localhost:8080/api"
+CONDUCTOR_BASE_URL="http://conductor-server:8080/api"
 
-def process_retry(workflow_id,event):
+
+def process_retry(loop,workflow_id,event):
     #Here i think we again need to send that the process has failed and lets enable the retry button to retry the logic from the particular task to end of the workflow 
     url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}"
     response=requests.get(url)
     print(response.json())
+    logger.info("Entering in to the Process Retry function ...........")
+    asyncio.run_coroutine_threadsafe(
+        push_to_ui(
+            {
+                "Testing": "We have entered in the process_retry function"
+            }
+        ),loop
+    )
+    asyncio.run_coroutine_threadsafe(
+        push_to_ui(response.json()),
+        loop
+    )
+    # return "Checking if we are getting the response.json or not by hitting the Conductor API"
 
-    if response.status_code !=200:
-        raise HTTPException(status_code=404,detail="Workflow Not Found")
+
+    # if response.status_code !=200:
+    #     raise HTTPException(status_code=404,detail="Workflow Not Found")
     
     wf=response.json()
     tasks=wf.get("tasks",[])
-    if not tasks:
-        raise Exception("No tasks found in Workflow Execution")
+    asyncio.run_coroutine_threadsafe(
+        push_to_ui(tasks),
+        loop
+    )
+    return
+    # if not tasks:
+    #     raise Exception("No tasks found in Workflow Execution")
     
-    #Lets Find the First Failed Tasks 
-    failed_index=None
 
-    for i,t in enumerate(tasks):
-        if t["status"]=="FAILED":
-            failed_index=i
-            break
-
-    if failed_index is None:
-        print("No failed tasks-nothing to rerun")
-        return None
+    # #Here we have pushed the lists of tasks to UI
+    # push_to_ui(tasks)
     
-    failed_task=tasks[failed_index]
-    failed_ref=failed_task["taskReferenceName"]
-    failed_type=failed_task["taskType"]
+    # #Lets Find the First Failed Tasks 
+    # failed_index=None
 
-    print(f"Failed Tasks is {failed_task} and Failed Type is {failed_type}")
-    #Determine The restart index
-    #Event tasks fails start from the previous task (Kafka_Publish)
-    if failed_type=="EVENT" or failed_ref.startswith("wait_for_"):
-        start_index=failed_index-1
-    else:
-        start_index=failed_index
+    # for i,t in enumerate(tasks):
+    #     if t["status"]=="FAILED":
+    #         failed_index=i
+    #         break
 
-    if start_index<0:
-        start_index=0
+    # if failed_index is None:
+    #     print("No failed tasks-nothing to rerun")
+    #     return None
     
-    start_task=tasks[start_index]
-    start_ref=start_task["taskReferenceName"]
-    print(f"Restarting from tasks : {start_ref}")
+    # failed_task=tasks[failed_index]
+    # failed_ref=failed_task["taskReferenceName"]
+    # failed_type=failed_task["taskType"]
 
-    #Collect all downstreams tasks from that index
-    reset_task_refs=[
-        t["taskReferenceName"] for t in tasks[start_index:]
-    ]
+    # print(f"Failed Tasks is {failed_task} and Failed Type is {failed_type}")
+    # #Determine The restart index
+    # #Event tasks fails start from the previous task (Kafka_Publish)
+    # if failed_type=="EVENT" or failed_ref.startswith("wait_for_"):
+    #     start_index=failed_index-1
+    # else:
+    #     start_index=failed_index
 
-    print(f"Tasks to reset: {reset_task_refs}")
-    rerun_url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
-
-    payload={
-        "workflowId":workflow_id,
-        "taskRefName":start_ref,
-        "resetTasks":reset_task_refs
-    }
-
-    print("Sending rerun requests to Conductor....")
-    print(payload)
-
-
-    rerun_response=requests.post(rerun_url,json=payload)
-
-    if rerun_response.status_code>=300:
-        raise Exception(
-            f"Rerun failed: {rerun_response.status_code}-{rerun_response.text}"
-        )
+    # if start_index<0:
+    #     start_index=0
     
-    print("Workflow Rerun triggered Successfully")
-    return rerun_response.json()
+    # start_task=tasks[start_index]
+    # start_ref=start_task["taskReferenceName"]
+    # print(f"Restarting from tasks : {start_ref}")
+
+    # #Collect all downstreams tasks from that index
+    # reset_task_refs=[
+    #     t["taskReferenceName"] for t in tasks[start_index:]
+    # ]
+
+    # print(f"Tasks to reset: {reset_task_refs}")
+    # rerun_url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
+
+    # info_data={
+    #     "rerun_url":"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun",
+    #     "CONDUCTOR_BASE_URL":"http://localhost:8080/api"
+    # }
+    # push_to_ui(info_data)
+    # payload={
+    #     "workflowId":workflow_id,
+    #     "taskRefName":start_ref,
+    #     "resetTasks":reset_task_refs
+    # }
+
+    # print("Sending rerun requests to Conductor....")
+    # print(payload)
+    # push_to_ui(payload);
+
+
+    # rerun_response=requests.post(rerun_url,json=payload)
+
+    # if rerun_response.status_code>=300:
+    #     raise Exception(
+    #         f"Rerun failed: {rerun_response.status_code}-{rerun_response.text}"
+    #     )
+    
+    # print("Workflow Rerun triggered Successfully")
+    # return rerun_response.json()
     
 
 def start_kafka_consumer(loop):
@@ -423,8 +453,8 @@ def start_kafka_consumer(loop):
         stats_url = event.get("data", {}).get("stats_url")
         workflow_id = event.get("workflowId")
         status=event.get("data",{}).get("status",'')
-        if status=="failed":
-            process_retry(workflow_id,event)
+        if status=="success":
+            process_retry(loop,workflow_id,event)
         logger.info(f"The Status Received is : {status}")
         logger.info(f"Workflow Id Received is : {workflow_id}")
         logger.info(f"Stats Url Received is : {stats_url}")
