@@ -242,7 +242,7 @@ services:
       - SERVICE_NAME=airflow-adapter
       # MWAA Configuration (Amazon Managed Workflows for Apache Airflow)
       - MWAA_ENDPOINT=${MWAA_ENDPOINT:-https://a53c6d7a-ec07-465a-9824-6cc199145a7a-vpce.c75.us-east-1.airflow.amazonaws.com:443}
-      - MWAA_SESSION_TOKEN=f043b8ec-8899-4bce-a96d-37927a83ffc1.NcXld0S_44EaBUurYbHBvw8kR8Y
+      - MWAA_SESSION_TOKEN=f4512f48-836a-44f2-9eac-c0a1f93bd633.0xNA5g8GjCFqFGGwIcTAa4ozfOU
       # DAG Monitoring Configuration
       - DAG_POLL_INTERVAL=${DAG_POLL_INTERVAL:-10}
       - DAG_MAX_WAIT_TIME=${DAG_MAX_WAIT_TIME:-3600}
@@ -290,7 +290,7 @@ services:
       - SERVICE_NAME=email-hygiene
       # MWAA Configuration (Amazon Managed Workflows for Apache Airflow)
       - MWAA_ENDPOINT=${MWAA_ENDPOINT:-https://a53c6d7a-ec07-465a-9824-6cc199145a7a-vpce.c75.us-east-1.airflow.amazonaws.com:443}
-      - MWAA_SESSION_TOKEN=f043b8ec-8899-4bce-a96d-37927a83ffc1.NcXld0S_44EaBUurYbHBvw8kR8Y
+      - MWAA_SESSION_TOKEN=f4512f48-836a-44f2-9eac-c0a1f93bd633.0xNA5g8GjCFqFGGwIcTAa4ozfOU
       # DAG Monitoring Configuration
       - DAG_POLL_INTERVAL=${DAG_POLL_INTERVAL:-10}
       - DAG_MAX_WAIT_TIME=${DAG_MAX_WAIT_TIME:-3600}
@@ -335,7 +335,7 @@ services:
       - SERVICE_NAME=reverse-email
       # MWAA Configuration (Amazon Managed Workflows for Apache Airflow)
       - MWAA_ENDPOINT=${MWAA_ENDPOINT:-https://a53c6d7a-ec07-465a-9824-6cc199145a7a-vpce.c75.us-east-1.airflow.amazonaws.com:443}
-      - MWAA_SESSION_TOKEN=f043b8ec-8899-4bce-a96d-37927a83ffc1.NcXld0S_44EaBUurYbHBvw8kR8Y
+      - MWAA_SESSION_TOKEN=f4512f48-836a-44f2-9eac-c0a1f93bd633.0xNA5g8GjCFqFGGwIcTAa4ozfOU
       # DAG Monitoring Configuration
       - DAG_POLL_INTERVAL=${DAG_POLL_INTERVAL:-10}
       - DAG_MAX_WAIT_TIME=${DAG_MAX_WAIT_TIME:-3600}

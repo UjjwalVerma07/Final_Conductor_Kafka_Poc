@@ -183,6 +183,7 @@ class PhoneValidatorService:
                     "input_key": input_key,
                     "output_bucket": output_bucket,
                     "output_key": output_key,
+                    "status":"success",
                     "result": "success",
                     "processedRecords": int(valid_count),
                     "failedRecords": int(invalid_count),
@@ -208,6 +209,7 @@ class PhoneValidatorService:
                 "taskId": event.get('taskId', 'unknown'),
                 "eventType": "phone_validation_completed",
                 "data": {
+                    "status":"failed",
                     "result": "failure",
                     "error": str(e),
                     "pipelineStage": "phone_validation",

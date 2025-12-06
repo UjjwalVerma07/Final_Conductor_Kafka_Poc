@@ -15,6 +15,7 @@ from fastapi import WebSocket
 import json 
 from minio_utils import MinIOManager
 import logging
+import time
 active_ws_connections=set()
 
 load_dotenv()
@@ -334,108 +335,211 @@ TOPIC_NAME=os.getenv("STATS_TOPIC","conductor-events")
 CONDUCTOR_BASE_URL="http://conductor-server:8080/api"
 
 
-def process_retry(loop,workflow_id,event):
-    #Here i think we again need to send that the process has failed and lets enable the retry button to retry the logic from the particular task to end of the workflow 
-    url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}"
-    response=requests.get(url)
-    print(response.json())
-    logger.info("Entering in to the Process Retry function ...........")
-    asyncio.run_coroutine_threadsafe(
-        push_to_ui(
-            {
-                "Testing": "We have entered in the process_retry function"
-            }
-        ),loop
-    )
-    asyncio.run_coroutine_threadsafe(
-        push_to_ui(response.json()),
-        loop
-    )
-    # return "Checking if we are getting the response.json or not by hitting the Conductor API"
-
-
-    # if response.status_code !=200:
-    #     raise HTTPException(status_code=404,detail="Workflow Not Found")
+# def process_retry(loop,workflow_id,event):
+#     #Here i think we again need to send that the process has failed and lets enable the retry button to retry the logic from the particular task to end of the workflow 
+#     time.sleep(5)
+#     logger.info("Wait for 5 seconds Till this we are loading results")
+#     url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}"
+#     response=requests.get(url)
+#     # print(response.json())
+#     logger.info("Entering in to the Process Retry function ...........")
+#     logger.info(f"The Workflow data corresponding to the Workflow Id received is : {response.json()}")
+#     asyncio.run_coroutine_threadsafe(
+#         push_to_ui(
+#             {
+#                 "Testing": "We have entered in the process_retry function"
+#             }
+#         ),loop
+#     )
+#     if response.status_code !=200:
+#         raise HTTPException(status_code=404,detail="Workflow Not Found")
     
-    wf=response.json()
-    tasks=wf.get("tasks",[])
-    asyncio.run_coroutine_threadsafe(
-        push_to_ui(tasks),
-        loop
-    )
-    return
-    # if not tasks:
-    #     raise Exception("No tasks found in Workflow Execution")
+#     wf=response.json()
+#     tasks=wf.get("tasks",[])
+
+#     if not tasks:
+#         raise Exception("No tasks found in Workflow Execution")
+    
+#     #Lets Find the First Failed Tasks 
+#     failed_index=None
+
+#     for i,t in enumerate(tasks):
+#         if t["status"]=="FAILED":
+#             failed_index=i
+#             break
+
+#     if failed_index is None:
+#         logger.info("No failed tasks-nothing to rerun")
+#         return None
+    
+#     failed_task=tasks[failed_index]
+    
+#     failed_ref=failed_task["referenceTaskName"]
+#     failed_type=failed_task["taskType"]
+#     logger.info(f"Failed Tasks is {failed_task} and Failed Type is {failed_type}")
+#     #Determine The restart index
+#     #Event tasks fails start from the previous task (Kafka_Publish)
+#     if failed_type=="EVENT" or failed_ref.startswith("wait_for_"):
+#         start_index=failed_index-1
+#     else:
+#         start_index=failed_index
+
+#     if start_index<0:
+#         start_index=0
+    
+#     start_task=tasks[start_index]
+    
+#     start_ref=start_task["referenceTaskName"]
+#     logger.info(f"Restarting from tasks : {start_ref}")
+
+#     #Collect all downstreams tasks from that index
+#     reset_task_refs=[
+#         t["referenceTaskName"] for t in tasks[start_index:]
+#     ]
+
+#     logger.info(f"Tasks to reset: {reset_task_refs}")
+#     rerun_url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
+
+#     info_data={
+#         "rerun_url":"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun",
+#         "CONDUCTOR_BASE_URL":CONDUCTOR_BASE_URL
+#     }
+#     # push_to_ui(info_data)
+#     asyncio.run_coroutine_threadsafe(
+#         push_to_ui(info_data),loop
+#     )
+#     payload={
+#         "workflowId":workflow_id,
+#         "referenceTaskName":start_ref,
+#         "resetTasks":reset_task_refs
+#     }
+
+#     logger.info("Sending rerun requests to Conductor....")
+#     print(payload)
+#     # push_to_ui(payload)
+
+#     asyncio.run_coroutine_threadsafe(
+#         push_to_ui(info_data),loop
+#     )
+#     payload=payload
+
+#     rerun_response=requests.post(rerun_url,json=payload)
+
+#     if rerun_response.status_code>=300:
+#         raise Exception(
+#             f"Rerun failed: {rerun_response.status_code}-{rerun_response.text}"
+#         )
+    
+#     print("Workflow Rerun triggered Successfully")
+#     return rerun_response
     
 
-    # #Here we have pushed the lists of tasks to UI
-    # push_to_ui(tasks)
+
+def process_retry_full(loop, workflow_id, event):
+    import time, requests, asyncio
+    from fastapi import HTTPException
+
+    time.sleep(5)
+    logger.info("Wait for 5 seconds till results load")
     
-    # #Lets Find the First Failed Tasks 
-    # failed_index=None
-
-    # for i,t in enumerate(tasks):
-    #     if t["status"]=="FAILED":
-    #         failed_index=i
-    #         break
-
-    # if failed_index is None:
-    #     print("No failed tasks-nothing to rerun")
-    #     return None
+    # Get the workflow execution data
+    wf_url = f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}"
+    wf_resp = requests.get(wf_url)
+    if wf_resp.status_code != 200:
+        raise HTTPException(status_code=404, detail="Workflow Not Found")
     
-    # failed_task=tasks[failed_index]
-    # failed_ref=failed_task["taskReferenceName"]
-    # failed_type=failed_task["taskType"]
-
-    # print(f"Failed Tasks is {failed_task} and Failed Type is {failed_type}")
-    # #Determine The restart index
-    # #Event tasks fails start from the previous task (Kafka_Publish)
-    # if failed_type=="EVENT" or failed_ref.startswith("wait_for_"):
-    #     start_index=failed_index-1
-    # else:
-    #     start_index=failed_index
-
-    # if start_index<0:
-    #     start_index=0
+    wf_data = wf_resp.json()
+    tasks = wf_data.get("tasks", [])
     
-    # start_task=tasks[start_index]
-    # start_ref=start_task["taskReferenceName"]
-    # print(f"Restarting from tasks : {start_ref}")
-
-    # #Collect all downstreams tasks from that index
-    # reset_task_refs=[
-    #     t["taskReferenceName"] for t in tasks[start_index:]
-    # ]
-
-    # print(f"Tasks to reset: {reset_task_refs}")
-    # rerun_url=f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
-
-    # info_data={
-    #     "rerun_url":"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun",
-    #     "CONDUCTOR_BASE_URL":"http://localhost:8080/api"
-    # }
-    # push_to_ui(info_data)
-    # payload={
-    #     "workflowId":workflow_id,
-    #     "taskRefName":start_ref,
-    #     "resetTasks":reset_task_refs
-    # }
-
-    # print("Sending rerun requests to Conductor....")
-    # print(payload)
-    # push_to_ui(payload);
-
-
-    # rerun_response=requests.post(rerun_url,json=payload)
-
-    # if rerun_response.status_code>=300:
-    #     raise Exception(
-    #         f"Rerun failed: {rerun_response.status_code}-{rerun_response.text}"
-    #     )
+    if not tasks:
+        raise Exception("No tasks found in workflow execution")
     
-    # print("Workflow Rerun triggered Successfully")
-    # return rerun_response.json()
+    # Find first failed task
+    failed_index = next((i for i, t in enumerate(tasks) if t["status"] == "FAILED"), None)
+    if failed_index is None:
+        logger.info("No failed tasks - nothing to rerun")
+        return None
     
+    failed_task = tasks[failed_index]
+    failed_ref = failed_task["referenceTaskName"]
+    failed_type = failed_task["taskType"]
+    logger.info(f"Failed Task: {failed_task['referenceTaskName']}, Type: {failed_type}")
+    
+    # Determine start_index for rerun
+    start_index = failed_index - 1 if failed_type == "EVENT" or failed_ref.startswith("wait_for_") else failed_index
+    start_index = max(0, start_index)
+    start_task = tasks[start_index]
+    start_ref = start_task["referenceTaskName"]
+    logger.info(f"Restarting from task: {start_ref}")
+    
+    # Get workflow definition to include all downstream tasks
+    wf_def_url = f"{CONDUCTOR_BASE_URL}/metadata/workflow/{wf_data['workflowName']}"
+    wf_def_resp = requests.get(wf_def_url)
+    if wf_def_resp.status_code != 200:
+        raise Exception(f"Workflow definition not found: {wf_def_resp.status_code}")
+    
+    wf_def = wf_def_resp.json()
+    all_tasks_in_def = [t["taskReferenceName"] for t in wf_def.get("tasks", [])]
+    
+    # Collect all tasks from the start_task onward
+    if start_ref in all_tasks_in_def:
+        start_def_index = all_tasks_in_def.index(start_ref)
+        reset_task_refs = all_tasks_in_def[start_def_index:]
+    else:
+        reset_task_refs = [t["referenceTaskName"] for t in tasks[start_index:]]
+    
+    logger.info(f"Tasks to reset (including unexecuted): {reset_task_refs}")
+    
+    # Notify UI
+    info_data = {
+        "rerun_url": f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun",
+        "CONDUCTOR_BASE_URL": CONDUCTOR_BASE_URL
+    }
+    asyncio.run_coroutine_threadsafe(push_to_ui(info_data), loop)
+    
+    # Prepare rerun payload
+    payload = {
+        "workflowId": workflow_id,
+        "referenceTaskName": start_ref,
+        "resetTasks": reset_task_refs
+    }
+    
+    logger.info("Sending rerun request to Conductor...")
+    print(payload)
+    
+    rerun_url = f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
+    rerun_response = requests.post(rerun_url, json=payload)
+    
+    if rerun_response.status_code >= 300:
+        raise Exception(f"Rerun failed: {rerun_response.status_code} - {rerun_response.text}")
+    
+    print("Workflow rerun triggered successfully")
+    return rerun_response
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def start_kafka_consumer(loop):
     consumer = KafkaConsumer(
@@ -453,8 +557,9 @@ def start_kafka_consumer(loop):
         stats_url = event.get("data", {}).get("stats_url")
         workflow_id = event.get("workflowId")
         status=event.get("data",{}).get("status",'')
-        if status=="success":
-            process_retry(loop,workflow_id,event)
+        if status=="failed":
+            # process_retry(loop,workflow_id,event)
+            process_retry_full(loop,workflow_id,event)
         logger.info(f"The Status Received is : {status}")
         logger.info(f"Workflow Id Received is : {workflow_id}")
         logger.info(f"Stats Url Received is : {stats_url}")

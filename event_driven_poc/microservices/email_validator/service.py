@@ -19,6 +19,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+FAIL_ONCE = True
 
 KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP', 'localhost:9092')
 SERVICE_NAME = os.getenv('SERVICE_NAME', 'email-validator')
@@ -132,8 +133,12 @@ class EmailValidatorService:
             raise
     
     def process_task_event(self, event):
-
+        global FAIL_ONCE
+        
         try:
+            if FAIL_ONCE:
+                FAIL_ONCE = False
+                raise Exception("Intentional first-time failure to test retry")
             workflow_id = event.get('workflowId')
             task_id = event.get('taskId')
             data = event.get('data', {})
@@ -185,6 +190,7 @@ class EmailValidatorService:
                            "output_bucket": output_bucket,
                            "output_key": output_key,
                            "result": "success",
+                           "status":"success",
                            "processedRecords": int(valid_count),
                            "failedRecords": int(invalid_count),
                            "pipelineStage": "email_validation",
@@ -220,6 +226,7 @@ class EmailValidatorService:
                 "taskId": event.get('taskId', 'unknown'),
                 "eventType": "email_validation_completed", 
                 "data": {
+                    "status":"failed",
                     "result": "failure",
                     "error": str(e),
                     "pipelineStage": "email_validation",

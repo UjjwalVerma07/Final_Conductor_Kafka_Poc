@@ -184,6 +184,7 @@ class EnricherService:
                     "output_bucket": output_bucket,
                     "output_key": output_key,
                     "result": "success",
+                    "status":"success",
                     "processedRecords": int(enriched_count),
                     "failedRecords": int(failed_count),
                     "pipelineStage": "enrichment",
@@ -207,6 +208,7 @@ class EnricherService:
                 "taskId": event.get('taskId', 'unknown'),
                 "eventType": "enrichment_completed",
                 "data": {
+                    "status":"failed",
                     "result": "failure",
                     "error": str(e),
                     "pipelineStage": "enrichment",
