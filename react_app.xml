@@ -1,0 +1,242 @@
+<CreateJobRequest>
+<workflowID><![CDATA[501]]></workflowID>
+<userID nodeName="userID">vdatta</userID>
+<customerID nodename="customerID">1118083</customerID>
+<externalSystem>ProcessRequestID</externalSystem>
+<externalID nodeName="externalID">13608</externalID>
+<orderID nodename="orderID">200014</orderID>
+<division nodename="division">460000</division>
+<jobName nodename="jobName">REG_Stage12239</jobName>
+<jobClass nodename="jobClass">
+</jobClass>
+<priority>50</priority>
+<orderSystem>ROME</orderSystem>
+<userType>MSExchange</userType>
+<customerSystem>Oracle</customerSystem>
+<heading1>Workbench IUSA Test</heading1>
+<heading2>DATA AXLE</heading2>
+<jobEmail />
+<productionEmail>Manish.Patel@data-axle.com</productionEmail>
+<Inputs>
+<Input>
+<step>1</step>
+<tag>Workflows</tag>
+<value>
+<!-- Import Workflow -->
+<!--Claim On The Fly Workflow -->
+<!--UQU XML-->
+<Workflow>
+<workflowID><![CDATA[766]]></workflowID>
+<externalName>
+</externalName>
+<Inputs>
+<Input>
+<step>1</step>
+<tag>jobClass</tag>
+<value>
+</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>fileNameList</tag>
+<value>s3://vdatta@l1118083/460000/1000814959/N.P200014.R12236.High.Ascii.J0814959?Project=dpservices</value>
+</Input>
+</Inputs>
+</Workflow>
+<!-- Email Hygiene Workflow -->
+<Workflow>
+<workflowID><![CDATA[698]]></workflowID>
+<externalName>Email Hygiene Test</externalName>
+<Inputs>
+<Input>
+<step>1</step>
+<tag>moveInputFlag</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>retention</tag>
+<value nodename="61740_13608_9999004">90</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>outputDSN</tag>
+<value nodename="61740_13608_9999005">N.P$ORDER_ID.R$REQUEST_ID.EH001.J$JOB_NUMBER(3,7)</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>description</tag>
+<value nodename="61740_13608_9999006">
+</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>moveOutputFlag</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>inputURL</tag>
+<value nodename="84840_13608_8888002">s3://vdatta@l1118083/460000/1000814959/N.P200014.R12236.High.Ascii.J0814959?Project=dpservices</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>outputURL</tag>
+<value nodename="61740_13608_9999003">s3://vdatta@l1118083/460000/$JOB_NUMBER/N.P$ORDER_ID.R$REQUEST_ID.EH001.J$JOB_NUMBER(3,7)?Project=dpservices</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>layoutID</tag>
+<value>1001334311</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>overwriteDSN</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>printReportsFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>reportGroupReference</tag>
+<value>2455474</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>matchKeysURL</tag>
+<value>http://virdpsapps001w:50002/GetServiceInputXML.aspx?id=5670853</value>
+<!-- matchKeysURL: <dps:from><dps:function dps:name="re_replace"><dps:parm dps:name="inputStr"><dps:field>input.EE_Email_Addr80</dps:field></dps:parm><dps:parm dps:name="regEx"><dps:stringLiteral>[^[:print:]]</dps:stringLiteral></dps:parm><dps:parm dps:name="newString"><dps:stringLiteral /></dps:parm></dps:function></dps:from><dps:from><dps:function dps:name="re_replace"><dps:parm dps:name="inputStr"><dps:field>input.phone</dps:field></dps:parm><dps:parm dps:name="regEx"><dps:stringLiteral>[^[:print:]]</dps:stringLiteral></dps:parm><dps:parm dps:name="newString"><dps:stringLiteral /></dps:parm></dps:function></dps:from><dps:from><dps:function dps:name="re_replace"><dps:parm dps:name="inputStr"><dps:field>input.addr1</dps:field></dps:parm><dps:parm dps:name="regEx"><dps:stringLiteral>[^[:print:]]</dps:stringLiteral></dps:parm><dps:parm dps:name="newString"><dps:stringLiteral /></dps:parm></dps:function></dps:from><dps:from><dps:function dps:name="re_replace"><dps:parm dps:name="inputStr"><dps:field>input.city</dps:field></dps:parm><dps:parm dps:name="regEx"><dps:stringLiteral>[^[:print:]]</dps:stringLiteral></dps:parm><dps:parm dps:name="newString"><dps:stringLiteral /></dps:parm></dps:function></dps:from> -->
+</Input>
+<Input>
+<step>1</step>
+<tag>appendAssignmentURL</tag>
+<value>http://virdpsapps001w:50002/GetServiceInputXML.aspx?id=5670854</value>
+<!-- appendAssignmentURL: <dps:assign dps:name="output.EH_EMAIL"><dps:from><dps:field>details.eh_email</dps:field></dps:from></dps:assign><dps:assign dps:name="output.EH_ACTION"><dps:from><dps:field>details.eh_action</dps:field></dps:from></dps:assign><dps:assign dps:name="output.EH_Code"><dps:from><dps:field>details.eh_code</dps:field></dps:from></dps:assign> -->
+</Input>
+<Input>
+<step>1</step>
+<tag>appendLayoutID</tag>
+<value>1001334392</value>
+</Input>
+</Inputs>
+</Workflow>
+<!-- Tally Workflow -->
+<Workflow>
+<workflowID><![CDATA[507]]></workflowID>
+<externalName>Tally1</externalName>
+<Inputs>
+<Input>
+<step>1</step>
+<tag>moveInputFlag</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>moveOutputFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>inputURL</tag>
+<value nodename="61740_13608_8888002">s3://vdatta@l1118083/460000/$JOB_NUMBER/N.P$ORDER_ID.R$REQUEST_ID.EH001.J$JOB_NUMBER(3,7)?Project=dpservices</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>outputURL</tag>
+<value nodename="64960_13608_9999003">s3://vdatta@l1118083/460000/$JOB_NUMBER/N.P$ORDER_ID.R$REQUEST_ID.EH001.J$JOB_NUMBER(3,7)?Project=dpservices</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>layoutID</tag>
+<value>1001334392</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>overwriteDSN</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>printReportsFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>reportGroupID</tag>
+<value>2455475</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>moveAuditFileFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>printReports</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>crosstabFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>nestedFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>globalVariablesURL</tag>
+<value>http://virdpsapps001w:50002/GetServiceInputXML.aspx?id=5670828</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>auditFlag</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>countsAsCSVFlag</tag>
+<value>FALSE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>auditTallyKey</tag>
+<value>5670832</value>
+</Input>
+</Inputs>
+</Workflow>
+<Workflow>
+<workflowID><![CDATA[697]]></workflowID>
+<externalName>Generate Reports</externalName>
+<Inputs>
+<Input>
+<step>1</step>
+<tag>includeKeycodesFlag</tag>
+<value>TRUE</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>reportGroupID</tag>
+<value>2455474</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>outputLayoutID</tag>
+<value>1001334392</value>
+</Input>
+<Input>
+<step>1</step>
+<tag>reportCoverPageURL</tag>
+<value>/MAS02/eReports/reportCovers/2455474_ReportCover.htm</value>
+</Input>
+</Inputs>
+</Workflow>
+</value>
+</Input>
+</Inputs>
+</CreateJobRequest>

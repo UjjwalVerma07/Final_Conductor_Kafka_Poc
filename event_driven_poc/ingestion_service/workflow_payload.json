@@ -1,0 +1,80 @@
+{
+  "workflow": {
+    "name": "direct_service_workflow",
+    "description": "Direct service communication workflow - test with Airflow and Email Hygiene",
+    "version": 16,
+    "tasks": [
+      {
+        "name": "trigger_airflow_dag",
+        "taskReferenceName": "trigger_airflow_dag",
+        "type": "KAFKA_PUBLISH",
+        "inputParameters": {
+          "kafka_request": {
+            "topic": "airflow-trigger-requests",
+            "bootStrapServers": "kafka:9092",
+            "value": {
+              "workflowId": "${workflow.workflowId}",
+              "taskId": "airflow_trigger_task",
+              "eventType": "airflow_trigger_request",
+              "data": {
+                "dag_id": "nua-nameparse-process-stage-v02-00-06-tiny",
+                "execution_id": "WBNameParse",
+                "pipelineStage": "airflow_processing"
+              }
+            },
+            "key": "airflow-trigger-${workflow.workflowId}"
+          }
+        }
+      },
+      {
+        "name": "wait_for_airflow_completion",
+        "taskReferenceName": "wait_for_airflow_completion",
+        "type": "EVENT",
+        "sink": "conductor:airflow_dag_completed",
+        "asyncComplete": true
+      },
+      {
+        "name": "trigger_email_hygiene",
+        "taskReferenceName": "trigger_email_hygiene",
+        "type": "KAFKA_PUBLISH",
+        "inputParameters": {
+          "kafka_request": {
+            "topic": "email-hygiene-requests",
+            "bootStrapServers": "kafka:9092",
+            "value": {
+              "workflowId": "${workflow.workflowId}",
+              "taskId": "email_hygiene_task",
+              "eventType": "email_hygiene_request",
+              "data": {
+                "dag_id": "nua-emailhygiene-process-stage-v01-01-04-tiny",
+                "execution_id": "WBEmailHygiene",
+                "pipelineStage": "email_hygiene"
+              }
+            },
+            "key": "email-hygiene-${workflow.workflowId}"
+          }
+        }
+      },
+      {
+        "name": "wait_for_email_hygiene_completion",
+        "taskReferenceName": "wait_for_email_hygiene_completion",
+        "type": "EVENT",
+        "sink": "conductor:email_hygiene_completed",
+        "asyncComplete": true
+      }
+    ],
+    "inputParameters": [],
+    "outputParameters": {
+      "workflow_id": "${workflow.workflowId}",
+      "airflow_result": "${wait_for_airflow_completion.output}",
+      "email_hygiene_result": "${wait_for_email_hygiene_completion.output}"
+    },
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false,
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 3600
+  },
+  "workflow_id": "test_workflow",
+  "trigger_conductor": true
+}

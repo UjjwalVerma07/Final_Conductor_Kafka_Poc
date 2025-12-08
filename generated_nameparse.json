@@ -1,0 +1,1641 @@
+{
+    "service": {
+        "type": "nameParse",
+        "id": "WBNameParse",
+        "input": {
+            "uri": "scxsacacsac",
+            "user_type": "data_in",
+            "LRECL": 326
+        },
+        "name": {
+            "from": {
+                "function": {
+                    "name": "re_replace",
+                    "parm": [
+                        {
+                            "name": "inputStr",
+                            "field": "input.name"
+                        },
+                        {
+                            "name": "regEx",
+                            "string-literal": "[^[:print:]]"
+                        },
+                        {
+                            "name": "newString",
+                            "string-literal": ""
+                        }
+                    ]
+                }
+            }
+        },
+        "nameOrder": "FNF",
+        "nameType": "M",
+        "output": {
+            "uri": "sdcsdcsvc",
+            "user_type": "data_out",
+            "LRECL": 855
+        },
+        "assignment": {
+            "assign": [
+                {
+                    "name": "output.NP_Family_Score",
+                    "from": {
+                        "field": "details.output.family_score"
+                    }
+                },
+                {
+                    "name": "output.NP_Family_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.family_name"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 50
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Family_Extra",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.family_extra"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 15
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Score",
+                    "from": {
+                        "field": "details.output.person1_score"
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Edited_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_name"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 50
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Salutation",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_salutation"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 10
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_First_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_firstname"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 25
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Middle_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_middlename"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 25
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Nick_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_nickname"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 25
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Last_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_lastname"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 30
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Maturity_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_maturitytitle"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 10
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_title"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 10
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Gender",
+                    "from": {
+                        "field": "details.output.person1_gender"
+                    }
+                },
+                {
+                    "name": "output.NP_Person1_Extra",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person1_extra"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 15
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Score",
+                    "from": {
+                        "field": "details.output.person2_score"
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Edited_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_name"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 50
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Salutation",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_salutation"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 10
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_First_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_firstname"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 25
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Middle_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_middlename"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 25
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Nick_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_nickname"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 25
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Last_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_lastname"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 30
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Maturity_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_maturitytitle"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 10
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_title"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 10
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Gender",
+                    "from": {
+                        "field": "details.output.person2_gender"
+                    }
+                },
+                {
+                    "name": "output.NP_Person2_Extra",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.person2_extra"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 15
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "output.NP_Business_Score",
+                    "from": {
+                        "field": "details.output.business_score"
+                    }
+                },
+                {
+                    "name": "output.NP_Business_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_substring",
+                            "parm": [
+                                {
+                                    "field": "details.output.business_name"
+                                },
+                                {
+                                    "decimal-literal": 1
+                                },
+                                {
+                                    "decimal-literal": 50
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "report": {
+            "uri": "/MAS02/eReports/counts/1001302146.counts.txt",
+            "default_char_set": "ISO-8859-1",
+            "record": [
+                {
+                    "name": "NP_Family_Score",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Family_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Family_Extra",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Score",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Edited_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Salutation",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_First_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Middle_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Nick_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Last_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Maturity_Title",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Title",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Gender",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person1_Extra",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Score",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Edited_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Salutation",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_First_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Middle_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Nick_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Last_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Maturity_Title",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Title",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Gender",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Person2_Extra",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Business_Score",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                },
+                {
+                    "name": "NP_Business_Name",
+                    "used": true,
+                    "type": "string",
+                    "delimiter": "\\n",
+                    "charset": "ISO-8859-1",
+                    "LRECL": 0
+                }
+            ],
+            "LRECL": 0
+        },
+        "report_assignment": {
+            "assign": [
+                {
+                    "name": "report.NP_Family_Score",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Family_Score"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Family_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Family_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Family_Extra",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Family_Extra"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Score",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person1_Score"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Edited_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person1_Edited_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Salutation",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person1_Salutation"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_First_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person1_First_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Middle_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person1_Middle_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Nick_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person1_Nick_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Last_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person1_Last_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Maturity_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person1_Maturity_Title"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person1_Title"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Gender",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person1_Gender"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person1_Extra",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person1_Extra"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Score",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person2_Score"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Edited_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person2_Edited_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Salutation",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person2_Salutation"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_First_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person2_First_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Middle_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person2_Middle_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Nick_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person2_Nick_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Last_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person2_Last_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Maturity_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person2_Maturity_Title"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Title",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person2_Title"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Gender",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Person2_Gender"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Person2_Extra",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Person2_Extra"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Business_Score",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "field": "output.NP_Business_Score"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "report.NP_Business_Name",
+                    "from": {
+                        "function": {
+                            "name": "string_concat",
+                            "parm": [
+                                {
+                                    "string-literal": "ALL|"
+                                },
+                                {
+                                    "function": {
+                                        "name": "append_exists",
+                                        "parm": [
+                                            {
+                                                "field": "output.NP_Business_Name"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "dagid": "nua-nameparse-process"
+    },
+    "metadata": {
+        "environment": [
+            {
+                "name": "AB_EBCDIC_PAGE",
+                "value": "ebcdic_page_037"
+            },
+            {
+                "name": "WORKFLOW_NAME",
+                "value": "NameParseNavigator"
+            },
+            {
+                "name": "WORKFLOW_ID",
+                "value": "692"
+            }
+        ],
+        "typedef": [
+            {
+                "name": "data_in",
+                "default_char_set": "ISO-8859-1",
+                "record": [
+                    {
+                        "name": "id",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "addr1",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "addr2",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "city",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "st",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 30,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 30
+                    },
+                    {
+                        "name": "zipfull",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 15,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 15
+                    },
+                    {
+                        "name": "phone",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 30,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 30
+                    },
+                    {
+                        "name": "LF",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 1,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 1,
+                        "default": {
+                            "string-literal": "\\n"
+                        }
+                    }
+                ],
+                "LRECL": 326
+            },
+            {
+                "name": "data_out",
+                "default_char_set": "ISO-8859-1",
+                "record": [
+                    {
+                        "name": "id",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "addr1",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "addr2",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "city",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "st",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 30,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 30
+                    },
+                    {
+                        "name": "zipfull",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 15,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 15
+                    },
+                    {
+                        "name": "phone",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 30,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 30
+                    },
+                    {
+                        "name": "NP_Family_Score",
+                        "used": true,
+                        "type": "decimal",
+                        "number-of-symbols": 3,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 3
+                    },
+                    {
+                        "name": "NP_Family_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "NP_Family_Extra",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 15,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 15
+                    },
+                    {
+                        "name": "NP_Person1_Score",
+                        "used": true,
+                        "type": "decimal",
+                        "number-of-symbols": 3,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 3
+                    },
+                    {
+                        "name": "NP_Person1_Edited_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "NP_Person1_Salutation",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 10,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 10
+                    },
+                    {
+                        "name": "NP_Person1_First_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 25,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 25
+                    },
+                    {
+                        "name": "NP_Person1_Middle_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 25,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 25
+                    },
+                    {
+                        "name": "NP_Person1_Nick_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 25,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 25
+                    },
+                    {
+                        "name": "NP_Person1_Last_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 30,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 30
+                    },
+                    {
+                        "name": "NP_Person1_Maturity_Title",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 10,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 10
+                    },
+                    {
+                        "name": "NP_Person1_Title",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 10,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 10
+                    },
+                    {
+                        "name": "NP_Person1_Gender",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 1,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 1
+                    },
+                    {
+                        "name": "NP_Person1_Extra",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 15,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 15
+                    },
+                    {
+                        "name": "NP_Person2_Score",
+                        "used": true,
+                        "type": "decimal",
+                        "number-of-symbols": 3,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 3
+                    },
+                    {
+                        "name": "NP_Person2_Edited_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "NP_Person2_Salutation",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 10,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 10
+                    },
+                    {
+                        "name": "NP_Person2_First_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 25,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 25
+                    },
+                    {
+                        "name": "NP_Person2_Middle_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 25,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 25
+                    },
+                    {
+                        "name": "NP_Person2_Nick_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 25,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 25
+                    },
+                    {
+                        "name": "NP_Person2_Last_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 30,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 30
+                    },
+                    {
+                        "name": "NP_Person2_Maturity_Title",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 10,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 10
+                    },
+                    {
+                        "name": "NP_Person2_Title",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 10,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 10
+                    },
+                    {
+                        "name": "NP_Person2_Gender",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 1,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 1
+                    },
+                    {
+                        "name": "NP_Person2_Extra",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 15,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 15
+                    },
+                    {
+                        "name": "NP_Business_Score",
+                        "used": true,
+                        "type": "decimal",
+                        "number-of-symbols": 3,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 3
+                    },
+                    {
+                        "name": "NP_Business_Name",
+                        "used": true,
+                        "type": "string",
+                        "fixed-length": 50,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 50
+                    },
+                    {
+                        "name": "LF",
+                        "used": false,
+                        "type": "string",
+                        "fixed-length": 1,
+                        "charset": "ISO-8859-1",
+                        "LRECL": 1,
+                        "default": {
+                            "string-literal": "\\n"
+                        }
+                    }
+                ],
+                "LRECL": 855
+            }
+        ]
+    }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "complete_phone_validation_task",
+  "event": "conductor:phone_validation_completed",
+  "condition": "$.eventType == 'phone_validation_completed'",
+  "actions": [
+    {
+      "action": "complete_task",
+      "complete_task": {
+        "workflowId": "${workflowId}",
+        "taskRefName": "wait_for_phone_completion",
+        "output": {
+          "input_bucket": "${data.input_bucket}",
+          "input_key": "${data.input_key}",
+          "output_bucket": "${data.output_bucket}",
+          "output_key": "${data.output_key}",
+          "result": "${data.result}",
+          "processedRecords": "${data.processedRecords}",
+          "failedRecords": "${data.failedRecords}",
+          "pipelineStage": "${data.pipelineStage}",
+          "timestamp": "${data.timestamp}"
+        }
+      }
+    }
+  ],
+  "active": true
+}
+

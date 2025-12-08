@@ -1,0 +1,19 @@
+[{
+  "name": "EVENT",
+  "description": "Event task for listening to external events in event-driven architecture",
+  "retryCount": 3,
+  "timeoutSeconds": 300,
+  "inputKeys": ["sink"],
+  "outputKeys": ["eventData"],
+  "timeoutPolicy": "TIME_OUT_WF",
+  "retryLogic": "FIXED",
+  "retryDelaySeconds": 10,
+  "responseTimeoutSeconds": 300,
+  "concurrentExecLimit": null,
+  "rateLimitPerFrequency": 0,
+  "rateLimitFrequencyInSeconds": 1,
+  "isolationGroupId": null,
+  "executionNameSpace": null,
+  "pollTimeoutSeconds": 5,
+  "backoffScaleFactor": 1
+}]
