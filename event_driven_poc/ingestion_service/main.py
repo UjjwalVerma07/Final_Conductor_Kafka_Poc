@@ -380,13 +380,6 @@ def process_retry_full(loop, workflow_id, event):
     logger.info(f"Tasks to reset (including unexecuted): {reset_task_refs}")
 
     
-    # Notify UI
-    info_data = {
-        "rerun_url": f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun",
-        "CONDUCTOR_BASE_URL": CONDUCTOR_BASE_URL
-    }
-    asyncio.run_coroutine_threadsafe(push_to_ui(info_data), loop)
-    
     # Conductor rerun API expects `reRunFromTaskRefName` (not referenceTaskName).
     # Include taskId for compatibility, but the refName is the primary selector.
     payload = {
@@ -395,29 +388,20 @@ def process_retry_full(loop, workflow_id, event):
         "reRunFromTaskId": start_task.get("taskId"),
         "resetTasks": reset_task_refs
     }
-
-    
-    logger.info("Sending rerun request to Conductor...")
-    # print(payload)
+    logger.info(f"Payload Received To Retry the Task is : {payload}")
+    logger.info("Sending Retry request to Conductor...")
+    logger.info(f"Now Retrying the Workflow")
+    rerun_url = f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
     info_data={
-        "CONDUCTOR_BASE_URL":"http://conductor-server:8080/api",
+        "retry_url":rerun_url,
         "payload":payload
     }
-    
     logger.info(f"Info Data Received is : {info_data}")
     logger.info(f"Data Sending To the Frontend to Retry Through UI.....")
     asyncio.run_coroutine_threadsafe(
         push_to_ui(info_data),
         loop
     )
-    
-    asyncio.run_coroutine_threadsafe(
-        push_to_ui(payload),
-        loop
-    )
-
-    logger.info(f"Now Retrying the Workflow")
-    rerun_url = f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
     rerun_response = requests.post(rerun_url, json=payload)
     
     if rerun_response.status_code >= 300:
