@@ -1,6 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { postWorkflowToFastAPI } from '../api/conductorApi';
-import { useEffect } from 'react';
 // WorkflowDesigner: minimal canvas + palette to compose service nodes.
 // Only the first Email node accepts a file/key input; all other details are derived.
 import ReactFlow, {
@@ -42,7 +41,7 @@ import EmailHygieneNode from './nodes/EmailHygieneNode';
 import NameParseNode from './nodes/NameParseNode';
 import NodePalette from './NodePalette';
 import { convertToConductorJSON } from '../utils/conductorConverter';
-import { deployConductorWorkflow, isWorkflowRegistered, triggerConductorWorkflow } from '../api/conductorApi';
+import { deployConductorWorkflow, isWorkflowRegistered, triggerConductorWorkflow, rerunConductorWorkflowInstance } from '../api/conductorApi';
 import ReactJson from 'react-json-view';
 
 // Map service types to ReactFlow node components
@@ -77,40 +76,118 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
     type: 'success' | 'error' | 'info' | null;
     message: string;
   }>({ type: null, message: '' });
+  const [lastWorkflowInstanceId, setLastWorkflowInstanceId] = useState<string | null>(null);
 
-
-
-
-   //We can add the lOGIC FOR THE
+  // WebSocket: listen for stats / retry events from backend (per-service DP stats/logs)
   useEffect(() => {
-  const ws = new WebSocket("ws://localhost:8000/ws");
+    const ws = new WebSocket('ws://localhost:8000/ws');
 
-  ws.onopen = () => {
-    console.log("✅ WebSocket connected");
-  };
+    ws.onopen = () => {
+      console.log('✅ WebSocket connected');
+    };
 
-  ws.onmessage = (event) => {
-    console.log("📩 WebSocket message received:", event.data);
+    ws.onmessage = (event) => {
+      console.log('📩 WebSocket message received:', event.data);
 
-    try {
-      const parsed = JSON.parse(event.data);
-      console.log("Parsed WS data:", parsed);
-    } catch (err) {
-      console.log("Raw WS string:", event.data);
-    }
-  };
+      try {
+        const parsed = JSON.parse(event.data);
+        console.log('Parsed WS data:', parsed);
 
-  ws.onerror = (err) => {
-    console.error("❌ WebSocket error:", err);
-  };
+        const workflowId = parsed?.workflow_id as string | undefined;
+        const taskId = parsed?.taskId as string | undefined;
+        const content: string | undefined = parsed?.content;
+        const retryUrl: string | undefined = parsed?.retry_url;
+        const retryPayload: any = parsed?.payload;
 
-  ws.onclose = () => {
-    console.log("🔌 WebSocket disconnected");
-  };
+        // Retry payloads: attach retry info to the matching service node based on reRunFromTaskRefName
+        if (retryUrl && retryPayload && retryPayload.reRunFromTaskRefName) {
+          const refName: string = retryPayload.reRunFromTaskRefName;
+          setNodes((prevNodes) =>
+            prevNodes.map((node) => {
+              let serviceRefName: string | undefined;
+              if (node.type === 'dpEmailHygiene') {
+                serviceRefName = 'dp_email_hygiene';
+              } else if (node.type === 'nameParse') {
+                serviceRefName = 'dp_name_parse';
+              } else if (node.type === 'emailValidation') {
+                serviceRefName = 'email_validation';
+              } else if (node.type === 'phoneValidation') {
+                serviceRefName = 'phone_validation';
+              } else if (node.type === 'enrichment') {
+                serviceRefName = 'enrichment';
+              }
 
-  return () => ws.close();
-}, []);
+              const matches = serviceRefName && serviceRefName === refName;
+              if (matches) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    retry: {
+                      retryUrl,
+                      payload: retryPayload,
+                    },
+                    // Mark this node as failed so the UI can highlight it and surface Retry
+                    status: 'failed',
+                  },
+                };
+              }
+              return node;
+            })
+          );
+          return;
+        }
 
+        // Stats payloads: attach stats to matching DP node based on taskId
+        if (content && taskId) {
+          setNodes((prevNodes) =>
+            prevNodes.map((node) => {
+              let expectedTaskId: string | undefined;
+              if (node.type === 'dpEmailHygiene') {
+                expectedTaskId = 'dp_email_hygiene_task';
+              } else if (node.type === 'nameParse') {
+                expectedTaskId = 'dp_name_parse_task';
+              }
+
+              if (expectedTaskId && expectedTaskId === taskId) {
+                const anyData: any = node.data || {};
+                const existingRetry = anyData.retry;
+                const nextStatus =
+                  existingRetry && anyData.status === 'failed' ? 'failed' : 'success';
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    stats: {
+                      taskId,
+                      workflowId: workflowId || '',
+                      content,
+                    },
+                    // If we already saw a retry for this node, keep it as failed; otherwise mark success.
+                    status: nextStatus,
+                  },
+                };
+              }
+
+              return node;
+            })
+          );
+        }
+      } catch (err) {
+        console.log('Raw WS string:', event.data);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error('❌ WebSocket error:', err);
+    };
+
+    ws.onclose = () => {
+      console.log('🔌 WebSocket disconnected');
+    };
+
+    return () => ws.close();
+  }, [setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -200,6 +277,7 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
     nameParse: {
       label: 'Name Parse',
       serviceName: 'name_parse',
+      status: 'idle',
     },
     dpEmailHygiene: {
       label: 'DP Email Hygiene',
@@ -210,6 +288,7 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
       generateReport: false,
       emailSourceField: 'EE_Email_Addr80',
       selectedLayoutId: '1000876411',
+      status: 'idle',
     },
     finalizePipeline: {
       label: 'Finalize Pipeline',
@@ -293,64 +372,78 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
 
 
   const handlePostWorkflow = async () => {
-  try {
-    if (nodes.length === 0) {
-      setPostStatus({ type: 'error', message: 'No nodes in workflow to submit.' });
-      return;
-    }
-
-    // Convert canvas nodes/edges to Conductor JSON
-    const workflowJson = convertToConductorJSON(nodes, edges, workflowName);
-    workflowJson.description = workflowDescription;
-    workflowJson.ownerEmail = ownerEmail;
-
-    // Compute minio_input_uri:
-    // 1) If Email node exists, build from bucket/key.
-    // 2) Else if DP Email Hygiene exists, convert its inputUri (s3:// → minio://).
-    let minio_input_uri: string | undefined = undefined;
-    const emailNode = nodes.find(n => n.type === 'emailValidation');
-    if (emailNode?.data?.inputKey) {
-      minio_input_uri = `minio://${emailNode.data.inputBucket}/${emailNode.data.inputKey}`;
-    } else {
-      const dpNode = nodes.find(n => n.type === 'dpEmailHygiene');
-      const dpInput = dpNode?.data?.inputUri as string | undefined;
-      if (dpInput && typeof dpInput === 'string') {
-        minio_input_uri = dpInput.startsWith('s3://')
-          ? dpInput.replace(/^s3:\/\//, 'minio://')
-          : dpInput;
+    try {
+      if (nodes.length === 0) {
+        setPostStatus({ type: 'error', message: 'No nodes in workflow to submit.' });
+        return;
       }
+
+      // Mark DP service nodes as running while workflow executes
+      setNodes((prev) =>
+        prev.map((n) =>
+          n.type === 'dpEmailHygiene' || n.type === 'nameParse'
+            ? { ...n, data: { ...n.data, status: 'running' } }
+            : n
+        )
+      );
+
+      // Convert canvas nodes/edges to Conductor JSON
+      const workflowJson = convertToConductorJSON(nodes, edges, workflowName);
+      workflowJson.description = workflowDescription;
+      workflowJson.ownerEmail = ownerEmail;
+
+      // Compute minio_input_uri:
+      // 1) If Email node exists, build from bucket/key.
+      // 2) Else if DP Email Hygiene exists, convert its inputUri (s3:// → minio://).
+      let minio_input_uri: string | undefined = undefined;
+      const emailNode = nodes.find((n) => n.type === 'emailValidation');
+      if (emailNode?.data?.inputKey) {
+        minio_input_uri = `minio://${emailNode.data.inputBucket}/${emailNode.data.inputKey}`;
+      } else {
+        const dpNode = nodes.find((n) => n.type === 'dpEmailHygiene');
+        const dpInput = dpNode?.data?.inputUri as string | undefined;
+        if (dpInput && typeof dpInput === 'string') {
+          minio_input_uri = dpInput.startsWith('s3://')
+            ? dpInput.replace(/^s3:\/\//, 'minio://')
+            : dpInput;
+        }
+      }
+
+      if (!minio_input_uri) {
+        setPostStatus({ type: 'error', message: 'Cannot find MinIO input URI from Email node.' });
+        return;
+      }
+
+      setPostStatus({ type: 'info', message: 'Submitting workflow to FastAPI...' });
+
+      // Call FastAPI
+      const result = await postWorkflowToFastAPI('http://localhost:8000', {
+        workflow: workflowJson,
+        minio_input_uri,
+        workflow_id: workflowName,
+        trigger_conductor: true,
+      });
+
+      const instanceId: string | undefined =
+        result?.workflow_instance_id || result?.workflowId || result?.workflow_id;
+      if (instanceId) {
+        setLastWorkflowInstanceId(instanceId);
+      }
+
+      setPostStatus({
+        type: 'success',
+        message: `Workflow deployed successfully! Workflow ID: ${result.workflow_instance_id}`,
+      });
+
+      console.log('Workflow submission result:', result);
+    } catch (error: any) {
+      console.error('Error posting workflow:', error);
+      setPostStatus({
+        type: 'error',
+        message: error.message || 'Failed to submit workflow',
+      });
     }
-
-    if (!minio_input_uri) {
-      setPostStatus({ type: 'error', message: 'Cannot find MinIO input URI from Email node.' });
-      return;
-    }
-
-    setPostStatus({ type: 'info', message: 'Submitting workflow to FastAPI...' });
-
-    // Call FastAPI
-    const result = await postWorkflowToFastAPI('http://localhost:8000', {
-      workflow: workflowJson,
-      minio_input_uri,
-      workflow_id: workflowName,
-      trigger_conductor: true,
-    });
-
-    setPostStatus({
-      type: 'success',
-      message: `Workflow deployed successfully! Workflow ID: ${result.workflow_instance_id}`,
-    });
-
-    console.log('Workflow submission result:', result);
-
-  } catch (error: any) {
-    console.error('Error posting workflow:', error);
-    setPostStatus({
-      type: 'error',
-      message: error.message || 'Failed to submit workflow',
-    });
-  }
-};
+  };
 
 
 
@@ -359,6 +452,34 @@ function WorkflowDesigner({ themeMode = 'light', onToggleTheme }: Props) {
 const clearCanvas = () => {
   setNodes([]);
   setEdges([]);
+};
+
+const handleRerunWorkflow = async () => {
+  try {
+    if (!lastWorkflowInstanceId) {
+      setPostStatus({ type: 'error', message: 'No workflow instance ID available to rerun.' });
+      return;
+    }
+
+    setPostStatus({ type: 'info', message: `Re-running workflow ${lastWorkflowInstanceId}...` });
+
+    await rerunConductorWorkflowInstance(conductorUrl, lastWorkflowInstanceId, {
+      reRunFromFailedTask: false,
+      taskRefName: null,
+      resetTasks: [],
+    });
+
+    setPostStatus({
+      type: 'success',
+      message: `Re-run triggered successfully for Workflow ID: ${lastWorkflowInstanceId}`,
+    });
+  } catch (error: any) {
+    console.error('Error re-running workflow:', error);
+    setPostStatus({
+      type: 'error',
+      message: error.message || 'Failed to re-run workflow',
+    });
+  }
 };
 
   // Removed sample template loader to keep repo minimal and focused.
@@ -468,6 +589,14 @@ const clearCanvas = () => {
                 disabled={nodes.length === 0 || !conductorUrl}
               >
                 Submit Workflow
+              </Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={handleRerunWorkflow}
+                disabled={!lastWorkflowInstanceId || !conductorUrl}
+              >
+                Re-run Workflow
               </Button>
               {postStatus.type && (
                 <Alert severity={postStatus.type}>

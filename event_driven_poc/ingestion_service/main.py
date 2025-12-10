@@ -380,6 +380,13 @@ def process_retry_full(loop, workflow_id, event):
     logger.info(f"Tasks to reset (including unexecuted): {reset_task_refs}")
 
     
+    # Notify UI
+    info_data = {
+        "rerun_url": f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun",
+        "CONDUCTOR_BASE_URL": CONDUCTOR_BASE_URL
+    }
+    asyncio.run_coroutine_threadsafe(push_to_ui(info_data), loop)
+    
     # Conductor rerun API expects `reRunFromTaskRefName` (not referenceTaskName).
     # Include taskId for compatibility, but the refName is the primary selector.
     payload = {
@@ -388,6 +395,8 @@ def process_retry_full(loop, workflow_id, event):
         "reRunFromTaskId": start_task.get("taskId"),
         "resetTasks": reset_task_refs
     }
+
+    
     logger.info(f"Payload Received To Retry the Task is : {payload}")
     logger.info("Sending Retry request to Conductor...")
     logger.info(f"Now Retrying the Workflow")
@@ -402,16 +411,48 @@ def process_retry_full(loop, workflow_id, event):
         push_to_ui(info_data),
         loop
     )
-    rerun_response = requests.post(rerun_url, json=payload)
+
+    # logger.info(f"Now Retrying the Workflow")
+    # rerun_url = f"{CONDUCTOR_BASE_URL}/workflow/{workflow_id}/rerun"
+    # rerun_response = requests.post(rerun_url, json=payload)
     
-    if rerun_response.status_code >= 300:
-        raise Exception(f"Rerun failed: {rerun_response.status_code} - {rerun_response.text}")
+    # if rerun_response.status_code >= 300:
+    #     raise Exception(f"Rerun failed: {rerun_response.status_code} - {rerun_response.text}")
     
-    print("Workflow rerun triggered successfully")
-    return rerun_response
+    # print("Workflow rerun triggered successfully")
+    # return rerun_response
+    return
 
 
 
+from fastapi import FastAPI, HTTPException, Request
+import requests
+
+CONDUCTOR_BASE_URL = "http://conductor-server-event:8080/api"
+
+@app.post("/retry-workflow")
+async def retry_workflow(request: Request):
+    payload = await request.json()
+    
+    rerun_url = payload.get("rerun_url")
+    if not rerun_url:
+        raise HTTPException(status_code=400, detail="rerun_url is required in payload")
+    
+    try:
+        # Forward the retry request directly to Conductor
+        response = requests.post(rerun_url, json=payload.get("payload", {}))
+        
+        if response.status_code >= 300:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        
+        # If response is empty, just return a success message
+        try:
+            return response.json()
+        except ValueError:
+            return {"message": "Workflow rerun triggered successfully"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 

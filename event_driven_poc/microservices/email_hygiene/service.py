@@ -208,9 +208,10 @@ class EmailHygieneService:
                 return None, f"API error: {response.status_code} - {response.text}",None
                 
         except requests.exceptions.RequestException as e:
-            return None, f"Network error: {str(e)}"
+            # Always return a 3-tuple to keep unpacking consistent
+            return None, f"Network error: {str(e)}", None
         except Exception as e:
-            return None, f"Error checking status: {str(e)}"
+            return None, f"Error checking status: {str(e)}", None
                 
     
     def wait_for_dag_completion(self,dag_id,dag_run_id,timeout=None,workflow_id=None):
@@ -317,8 +318,11 @@ class EmailHygieneService:
 
 
     def process_task_event(self,event):
+ 
+
      
         try:
+            
             workflow_id=event.get('workflowId')
             task_id=event.get('taskId')
             data=event.get('data',{})

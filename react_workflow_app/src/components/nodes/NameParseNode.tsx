@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useMemo, useState } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import {
   Card,
   CardContent,
@@ -26,17 +26,83 @@ import {
   Paper,
   RadioGroup,
   Radio,
+  Tooltip,
 } from '@mui/material';
-import { Send, Edit } from '@mui/icons-material';
+import { Send, Edit, Download, Replay } from '@mui/icons-material';
 import layoutsJson from '../../data/layouts.json';
 import dpTemplates from '../../data/dpserviceTemplates.json';
 import nlsDefaults from '../../data/dpservice_nls.json';
 
-function NameParseNode({ data }: NodeProps) {
+function NameParseNode({ id, data }: NodeProps) {
+  const { setNodes } = useReactFlow();
   const [open, setOpen] = useState(false);
   const [nodeData, setNodeData] = useState({
     ...data,
   });
+  const stats = (data as any)?.stats as
+    | { taskId?: string; workflowId?: string; content?: string }
+    | undefined;
+  const hasStats = !!stats?.content;
+
+  const handleDownloadStats = () => {
+    if (!stats?.content) return;
+    const fileName = `${stats.taskId || 'dp_name_parse_task'}_${
+      stats.workflowId || 'workflow'
+    }_stats.json`;
+    try {
+      const blob = new Blob([stats.content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      console.log(`💾 Download Name Parse stats file: ${fileName}`);
+    } catch (err) {
+      console.error('Failed to download Name Parse stats file:', err);
+    }
+  };
+  const retry = (data as any)?.retry as
+    | { retryUrl?: string; payload?: any }
+    | undefined;
+  const hasRetry = !!retry?.retryUrl && !!retry?.payload;
+
+  const status =
+    ((data as any)?.status as 'idle' | 'running' | 'success' | 'failed') || 'idle';
+
+  const borderColor =
+    status === 'running'
+      ? '#1976d2'
+      : status === 'success'
+      ? '#2e7d32'
+      : status === 'failed'
+      ? '#d32f2f'
+      : '#bdbdbd';
+
+  const statusLabel =
+    status === 'running'
+      ? 'Running...'
+      : status === 'success'
+      ? 'Completed'
+      : status === 'failed'
+      ? 'Failed (retry available)'
+      : 'Idle';
+
+  const handleRetry = async () => {
+    if (!retry?.retryUrl || !retry?.payload) return;
+    try {
+      await fetch(retry.retryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(retry.payload),
+      });
+      console.log(
+        `🔁 Retry triggered for ${retry.payload?.reRunFromTaskRefName || 'dp_name_parse'}`
+      );
+    } catch (err) {
+      console.error('Failed to retry Name Parse workflow from node:', err);
+    }
+  };
 
   // Layout selections and mapping state
   const layoutIds = useMemo(() => Object.keys(layoutsJson || {}), []);
@@ -435,7 +501,7 @@ ${reportXml}\t</dps:nameParse>
 
   const handleSave = () => {
     const xml = generateDpServicesXml();
-    Object.assign(data, {
+    const updatedData = {
       ...nodeData,
       dpserviceXml: xml,
       selectedLayoutId,
@@ -443,13 +509,43 @@ ${reportXml}\t</dps:nameParse>
       nameSourceField,
       nameOrientation,
       nameType,
-    });
+    };
+
+    // Persist configuration + dp_config XML into ReactFlow node state
+    setNodes((nodes) =>
+      nodes.map((n) =>
+        n.id === id
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                ...updatedData,
+              },
+            }
+          : n
+      )
+    );
+
     setOpen(false);
   };
 
   return (
     <>
-      <Card sx={{ minWidth: 240, borderLeft: '4px solid #1976d2' }}>
+      <Card
+        sx={{
+          minWidth: 240,
+          borderLeft: `4px solid ${borderColor}`,
+          position: 'relative',
+          transition: 'box-shadow 0.2s, transform 0.2s',
+          '&:hover': {
+            boxShadow: 6,
+            transform: 'translateY(-2px)',
+          },
+          '&:hover .dp-node-actions': {
+            opacity: 1,
+          },
+        }}
+      >
         <Handle type="target" position={Position.Left} style={{ width: 16, height: 16 }} />
         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box
@@ -468,9 +564,34 @@ ${reportXml}\t</dps:nameParse>
                 <Typography variant="subtitle2">{data.label || 'DP Name Parse'}</Typography>
               </Box>
             </Box>
-            <IconButton size="small" onClick={() => setOpen(true)}>
-              <Edit fontSize="small" />
-            </IconButton>
+            <Box
+              className="dp-node-actions"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                opacity: 0,
+                transition: 'opacity 0.2s',
+              }}
+            >
+              {hasStats && (
+                <Tooltip title="Download stats JSON">
+                  <IconButton size="small" onClick={handleDownloadStats}>
+                    <Download fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {hasRetry && (
+                <Tooltip title="Retry workflow from this task">
+                  <IconButton size="small" onClick={handleRetry}>
+                    <Replay fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <IconButton size="small" onClick={() => setOpen(true)}>
+                <Edit fontSize="small" />
+              </IconButton>
+            </Box>
           </Box>
           <Typography
             variant="caption"
@@ -478,6 +599,13 @@ ${reportXml}\t</dps:nameParse>
             sx={{ display: 'block', mt: 0.5 }}
           >
             Topic: dpservices-requests
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mt: 0.25 }}
+          >
+            dp_name_parse · {statusLabel}
           </Typography>
         </CardContent>
         <Handle type="source" position={Position.Right} style={{ width: 16, height: 16 }} />
@@ -570,6 +698,7 @@ ${reportXml}\t</dps:nameParse>
               <Grid item xs={12} md={6}>
                 <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 1 }}>
                   <Tab label="Name mapping" />
+                  <Tab label="Stats" />
                 </Tabs>
                 {activeTab === 0 && (
                   <Stack spacing={2}>
@@ -631,6 +760,40 @@ ${reportXml}\t</dps:nameParse>
                       <FormControlLabel value="I" control={<Radio />} label="Individual" />
                       <FormControlLabel value="M" control={<Radio />} label="Mixed" />
                     </RadioGroup>
+                  </Stack>
+                )}
+                {activeTab === 1 && (
+                  <Stack spacing={2}>
+                    <Typography variant="body2">
+                      Latest stats received for this node (from MinIO via backend).
+                    </Typography>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 1,
+                        maxHeight: 220,
+                        overflow: 'auto',
+                        bgcolor: 'grey.900',
+                        color: 'grey.100',
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      }}
+                    >
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                        {stats?.content || 'No stats received yet for this node.'}
+                      </pre>
+                    </Paper>
+                    {hasStats && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Download fontSize="small" />}
+                        onClick={handleDownloadStats}
+                        sx={{ alignSelf: 'flex-start' }}
+                      >
+                        Download stats JSON
+                      </Button>
+                    )}
                   </Stack>
                 )}
               </Grid>

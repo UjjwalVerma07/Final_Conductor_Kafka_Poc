@@ -159,7 +159,6 @@ export function convertToConductorJSON(
       pipeline_result: lastPublishOutputKey || '',
       workflow_id: '${workflow.workflowId}',
       workflowId: '${workflow.workflowId}',
-      final_file: 'enriched_${workflow.instanceId}.csv',
       ...outputParameters,
     },
     schemaVersion: 2,
@@ -333,11 +332,13 @@ function convertNodeToTaskGeneric(
         type: 'KAFKA_PUBLISH',
         inputParameters: {
           kafka_request: {
+            // Hardcoded per backend contract for Email Hygiene
             topic: 'email-hygiene-requests',
             bootStrapServers: 'kafka:9092',
             value: {
               workflowId: '${workflow.workflowId}',
               taskId: 'dp_email_hygiene_task',
+              // Hardcoded per backend contract for Email Hygiene
               eventType: 'email_hygiene_request',
               data: {
                 dp_config: dpConfig,
@@ -368,11 +369,13 @@ function convertNodeToTaskGeneric(
         type: 'KAFKA_PUBLISH',
         inputParameters: {
           kafka_request: {
+            // Hardcoded per backend contract for Name Parse (via Airflow trigger)
             topic: 'airflow-trigger-requests',
             bootStrapServers: 'kafka:9092',
             value: {
               workflowId: '${workflow.workflowId}',
               taskId: 'dp_name_parse_task',
+              // Hardcoded per backend contract for Name Parse (via Airflow trigger)
               eventType: 'airflow_trigger_request',
               data: {
                 dp_config: dpConfig,

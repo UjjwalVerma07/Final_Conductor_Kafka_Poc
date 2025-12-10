@@ -162,5 +162,31 @@ export async function postWorkflowToFastAPI(
   }
 }
 
+// Rerun an existing workflow instance
+export async function rerunConductorWorkflowInstance(
+  conductorUrl: string,
+  workflowInstanceId: string,
+  options?: {
+    reRunFromFailedTask?: boolean;
+    taskRefName?: string | null;
+    resetTasks?: string[];
+  }
+): Promise<void> {
+  const url = buildUrl(conductorUrl, `/api/workflow/${workflowInstanceId}/rerun`);
+  const body = {
+    workflowId: workflowInstanceId,
+    reRunFromFailedTask: options?.reRunFromFailedTask ?? false,
+    taskRefName: options?.taskRefName ?? null,
+    resetTasks: options?.resetTasks ?? [],
+  };
 
+  console.debug('POST', url, body);
+  const response = await axiosInstance.post(url, body, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (response.status >= 400) {
+    throw new Error(response.data?.message || `Failed to rerun workflow: ${response.status}`);
+  }
+}
 
